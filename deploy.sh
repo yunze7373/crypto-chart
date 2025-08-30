@@ -157,7 +157,7 @@ create_systemd_service() {
     cat > "${PROJECT_DIR}/${SERVICE_NAME}.service" << EOF
 [Unit]
 Description=CryptoRate Pro - 数字资产汇率监控平台
-Documentation=https://github.com/eizawa/crypto-chart
+Documentation=https://github.com/yunze7373/crypto-chart
 After=network.target network-online.target
 Wants=network-online.target
 

@@ -40,7 +40,7 @@ readonly PIP_BIN="/usr/local/bin/pip3"
 readonly GUNICORN_BIN="/usr/local/bin/gunicorn"
 
 # Git 配置
-readonly GIT_REPO="https://github.com/eizawa/crypto-chart.git"
+readonly GIT_REPO="https://github.com/yunze7373/crypto-chart.git"
 readonly GIT_BRANCH="main"
 
 # 健康检查配置
