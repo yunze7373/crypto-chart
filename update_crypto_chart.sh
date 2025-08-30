@@ -32,8 +32,8 @@ set -euo pipefail
 # 基本配置
 readonly PROJECT_NAME="CryptoRate Pro"
 readonly SERVICE_NAME="crypto-chart"
-readonly PROJECT_DIR="/home/pi/crypto-chart"
-readonly BACKUP_DIR="/home/pi/backup/crypto-chart"
+readonly PROJECT_DIR="$HOME/crypto-chart"
+readonly BACKUP_DIR="$HOME/backup/crypto-chart"
 readonly LOG_DIR="/var/log/crypto-chart"
 readonly PYTHON_BIN="/usr/bin/python3"
 readonly PIP_BIN="/usr/local/bin/pip3"
