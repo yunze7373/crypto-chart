@@ -9,7 +9,8 @@ set -euo pipefail
 # 配置变量
 readonly PROJECT_NAME="CryptoRate Pro"
 readonly SERVICE_NAME="crypto-chart"
-readonly PROJECT_DIR="/home/pi/crypto-chart"
+readonly DEFAULT_PROJECT_DIR="$HOME/crypto-chart"
+PROJECT_DIR="${1:-$DEFAULT_PROJECT_DIR}"
 readonly GIT_REPO="https://github.com/yunze7373/crypto-chart.git"  # 替换为你的实际仓库地址
 
 # 颜色输出
@@ -86,22 +87,20 @@ install_system_dependencies() {
 
 # 克隆项目
 clone_project() {
-    log_info "克隆项目代码..."
-    
+    local target_dir="$1"
+    log_info "克隆项目代码到 $target_dir ..."
     # 如果目录已存在，备份
-    if [ -d "$PROJECT_DIR" ]; then
+    if [ -d "$target_dir" ]; then
         log_warning "项目目录已存在，创建备份..."
-        mv "$PROJECT_DIR" "${PROJECT_DIR}.backup.$(date +%s)"
+        mv "$target_dir" "${target_dir}.backup.$(date +%s)"
     fi
-    
     # 克隆代码
-    git clone "$GIT_REPO" "$PROJECT_DIR" || {
+    git clone "$GIT_REPO" "$target_dir" || {
         log_error "无法克隆仓库，请检查网络连接和仓库地址"
         log_info "如果是私有仓库，请先配置 SSH 密钥"
         error_exit "代码克隆失败"
     }
-    
-    cd "$PROJECT_DIR"
+    cd "$target_dir"
     log_success "项目克隆完成"
 }
 
@@ -340,8 +339,8 @@ main() {
     # 2. 安装系统依赖
     install_system_dependencies
     
-    # 3. 克隆项目
-    clone_project
+    # 3. 克隆项目（支持自定义安装路径）
+    clone_project "$PROJECT_DIR"
     
     # 4. 设置Python环境
     setup_python_environment
