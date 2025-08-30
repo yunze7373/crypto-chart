@@ -143,9 +143,9 @@ EOF
 }
 
 # 创建增强的systemd服务文件
+USERNAME=$(whoami)
 create_systemd_service() {
     log_info "创建 systemd 服务..."
-    
     cat > "${PROJECT_DIR}/${SERVICE_NAME}.service" << EOF
 [Unit]
 Description=CryptoRate Pro - 数字资产汇率监控平台
@@ -155,8 +155,8 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=pi
-Group=pi
+User=${USERNAME}
+Group=${USERNAME}
 WorkingDirectory=${PROJECT_DIR}
 Environment=PATH=${PROJECT_DIR}/venv/bin:/usr/bin:/usr/local/bin
 Environment=PYTHONPATH=${PROJECT_DIR}
@@ -170,7 +170,6 @@ ExecStart=${PROJECT_DIR}/venv/bin/gunicorn --bind 0.0.0.0:5008 --workers 2 --tim
 # 重启策略
 Restart=always
 RestartSec=10
-StartLimitIntervalSec=0
 
 # 安全配置
 NoNewPrivileges=yes
@@ -191,7 +190,6 @@ SyslogIdentifier=crypto-chart
 [Install]
 WantedBy=multi-user.target
 EOF
-    
     # 复制服务文件到系统目录
     sudo cp "${PROJECT_DIR}/${SERVICE_NAME}.service" "/etc/systemd/system/"
     
