@@ -1,16 +1,14 @@
 #!/bin/bash
 
-# CryptoRate Pro 系统监控脚本
-# 用于监控应用状态和系统资源
+# CryptoRate Pro 监控脚本
+# 用于监控服务状态、性能指标和健康检查
 
 set -euo pipefail
 
-# 配置
+readonly PROJECT_DIR="$HOME/crypto-chart"
 readonly SERVICE_NAME="crypto-chart"
-readonly PROJECT_DIR="/home/pi/crypto-chart"
-readonly LOG_FILE="/var/log/crypto-chart/monitor.log"
-readonly ALERT_EMAIL=""  # 设置告警邮箱地址
-readonly HEALTH_CHECK_URL="http://localhost:5008/api/current_prices?base=BTC&quote=USDT"
+readonly LOG_DIR="/var/log/crypto-chart"
+readonly PROJECT_LOG_DIR="$PROJECT_DIR/logs"
 
 # 颜色定义
 RED='\033[0;31m'
@@ -19,324 +17,299 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-# 日志函数
 log_info() {
-    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]${NC} $*" | tee -a "$LOG_FILE"
-}
-
-log_warning() {
-    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] [WARN]${NC} $*" | tee -a "$LOG_FILE"
-}
-
-log_error() {
-    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${BLUE}[INFO]${NC} $*"
 }
 
 log_success() {
-    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS]${NC} $*" | tee -a "$LOG_FILE"
+    echo -e "${GREEN}[SUCCESS]${NC} $*"
+}
+
+log_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $*"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $*"
+}
+
+# 获取时间戳
+timestamp() {
+    date '+%Y-%m-%d %H:%M:%S'
 }
 
 # 检查服务状态
 check_service_status() {
-    local status="UNKNOWN"
-    local color="$NC"
-    
+    local status
     if systemctl is-active --quiet "$SERVICE_NAME"; then
-        status="RUNNING"
-        color="$GREEN"
-    elif systemctl is-failed --quiet "$SERVICE_NAME"; then
-        status="FAILED"
-        color="$RED"
-    elif systemctl is-enabled --quiet "$SERVICE_NAME"; then
-        status="STOPPED"
-        color="$YELLOW"
+        status="运行中"
+        return 0
     else
-        status="DISABLED"
-        color="$RED"
+        status="已停止"
+        return 1
     fi
-    
-    echo -e "服务状态: ${color}${status}${NC}"
-    return $([ "$status" = "RUNNING" ] && echo 0 || echo 1)
 }
 
 # 检查端口监听
 check_port_listening() {
-    if ss -tulpn | grep -q ":5008 "; then
-        echo -e "端口状态: ${GREEN}监听中${NC}"
+    if netstat -tlnp 2>/dev/null | grep -q ":5008 "; then
         return 0
     else
-        echo -e "端口状态: ${RED}未监听${NC}"
         return 1
     fi
 }
 
-# 健康检查
-check_health() {
-    if curl -s --max-time 10 "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
-        echo -e "健康检查: ${GREEN}通过${NC}"
+# HTTP健康检查
+check_http_health() {
+    local url="http://localhost:5008"
+    if curl -s --max-time 10 "$url" > /dev/null 2>&1; then
         return 0
     else
-        echo -e "健康检查: ${RED}失败${NC}"
         return 1
     fi
 }
 
-# 检查系统资源
-check_system_resources() {
-    echo "=== 系统资源 ==="
+# 获取系统资源使用情况
+get_system_resources() {
+    local cpu_usage mem_usage disk_usage
     
     # CPU使用率
-    local cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | sed 's/%us,//')
-    echo "CPU使用率: ${cpu_usage}%"
+    cpu_usage=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1 || echo "N/A")
     
-    # 内存使用情况
-    local memory_info=$(free -h | grep "Mem:")
-    local used_mem=$(echo $memory_info | awk '{print $3}')
-    local total_mem=$(echo $memory_info | awk '{print $2}')
-    echo "内存使用: $used_mem / $total_mem"
+    # 内存使用率
+    mem_usage=$(free | grep Mem | awk '{printf "%.1f", $3/$2 * 100.0}' || echo "N/A")
     
-    # 磁盘使用情况
-    local disk_usage=$(df -h "$PROJECT_DIR" | tail -1 | awk '{print $5}')
-    echo "磁盘使用: $disk_usage"
+    # 磁盘使用率
+    disk_usage=$(df / | tail -1 | awk '{print $5}' | cut -d'%' -f1 || echo "N/A")
     
-    # 负载平均值
-    local load_avg=$(uptime | awk -F'load average:' '{print $2}')
-    echo "负载平均值:$load_avg"
-    
-    echo ""
+    echo "CPU: ${cpu_usage}% | 内存: ${mem_usage}% | 磁盘: ${disk_usage}%"
 }
 
-# 检查应用进程
-check_processes() {
-    echo "=== 应用进程 ==="
+# 获取进程信息
+get_process_info() {
+    local pid_info
     
-    local processes=$(ps aux | grep -E "(gunicorn|python.*app\.py)" | grep -v grep)
-    
-    if [ -n "$processes" ]; then
-        echo "$processes"
-        local process_count=$(echo "$processes" | wc -l)
-        echo -e "\n进程数量: ${GREEN}$process_count${NC}"
-    else
-        echo -e "${RED}未发现应用进程${NC}"
-    fi
-    
-    echo ""
-}
-
-# 检查日志错误
-check_logs_for_errors() {
-    echo "=== 最近日志错误 ==="
-    
-    local recent_errors=$(journalctl -u "$SERVICE_NAME" -p err --since "1 hour ago" --no-pager -q)
-    
-    if [ -n "$recent_errors" ]; then
-        echo -e "${RED}发现错误日志:${NC}"
-        echo "$recent_errors"
-    else
-        echo -e "${GREEN}最近1小时无错误日志${NC}"
-    fi
-    
-    echo ""
-}
-
-# 检查磁盘空间
-check_disk_space() {
-    echo "=== 磁盘空间检查 ==="
-    
-    local disk_usage_percent=$(df "$PROJECT_DIR" | tail -1 | awk '{print $5}' | sed 's/%//')
-    
-    if [ "$disk_usage_percent" -gt 90 ]; then
-        echo -e "${RED}警告: 磁盘使用率过高 ($disk_usage_percent%)${NC}"
-        return 1
-    elif [ "$disk_usage_percent" -gt 80 ]; then
-        echo -e "${YELLOW}注意: 磁盘使用率较高 ($disk_usage_percent%)${NC}"
-        return 1
-    else
-        echo -e "${GREEN}磁盘空间正常 ($disk_usage_percent%)${NC}"
-        return 0
-    fi
-}
-
-# 网络连通性检查
-check_network_connectivity() {
-    echo "=== 网络连通性检查 ==="
-    
-    # 检查币安API
-    if curl -s --max-time 10 "https://api.binance.com/api/v3/ping" > /dev/null; then
-        echo -e "Binance API: ${GREEN}正常${NC}"
-    else
-        echo -e "Binance API: ${RED}连接失败${NC}"
-    fi
-    
-    # 检查汇率API
-    if curl -s --max-time 10 "https://api.exchangerate-api.com/v4/latest/USD" > /dev/null; then
-        echo -e "汇率API: ${GREEN}正常${NC}"
-    else
-        echo -e "汇率API: ${RED}连接失败${NC}"
-    fi
-    
-    echo ""
-}
-
-# 发送告警邮件
-send_alert_email() {
-    local subject="$1"
-    local message="$2"
-    
-    if [ -n "$ALERT_EMAIL" ]; then
-        echo "$message" | mail -s "$subject" "$ALERT_EMAIL" 2>/dev/null || true
-    fi
-}
-
-# 尝试自动修复
-auto_repair() {
-    log_warning "尝试自动修复..."
-    
-    # 重启服务
-    log_info "重启服务..."
-    if sudo systemctl restart "$SERVICE_NAME"; then
-        sleep 10
-        if check_health; then
-            log_success "自动修复成功"
-            return 0
+    if pgrep -f "gunicorn.*crypto-chart" > /dev/null; then
+        pid_info=$(pgrep -f "gunicorn.*crypto-chart" | head -1)
+        if [ -n "$pid_info" ]; then
+            echo "PID: $pid_info"
+            # 获取内存使用
+            local mem_kb=$(ps -o rss= -p "$pid_info" 2>/dev/null || echo "0")
+            local mem_mb=$((mem_kb / 1024))
+            echo "内存使用: ${mem_mb}MB"
         fi
+    else
+        echo "未找到 gunicorn 进程"
     fi
-    
-    log_error "自动修复失败"
-    return 1
 }
 
-# 完整监控
-full_monitor() {
-    echo "=== CryptoRate Pro 系统监控 ==="
-    echo "监控时间: $(date)"
+# 检查日志文件大小
+check_log_sizes() {
+    echo "日志文件大小:"
+    
+    # 检查系统日志目录
+    if [ -d "$LOG_DIR" ]; then
+        find "$LOG_DIR" -name "*.log" -type f 2>/dev/null | while read -r logfile; do
+            local size=$(du -h "$logfile" 2>/dev/null | cut -f1 || echo "0")
+            echo "  $(basename "$logfile"): $size"
+        done
+    fi
+    
+    # 检查项目日志目录
+    if [ -d "$PROJECT_LOG_DIR" ]; then
+        find "$PROJECT_LOG_DIR" -name "*.log" -type f 2>/dev/null | while read -r logfile; do
+            local size=$(du -h "$logfile" 2>/dev/null | cut -f1 || echo "0")
+            echo "  $(basename "$logfile"): $size"
+        done
+    fi
+}
+
+# 快速状态检查
+status_check() {
+    echo "=== CryptoRate Pro 快速状态检查 ==="
+    echo "时间: $(timestamp)"
     echo ""
     
-    local issues=0
-    
-    # 检查服务状态
-    if ! check_service_status; then
-        ((issues++))
-    fi
-    
-    # 检查端口
-    if ! check_port_listening; then
-        ((issues++))
-    fi
-    
-    # 健康检查
-    if ! check_health; then
-        ((issues++))
-    fi
-    
-    echo ""
-    
-    # 系统资源检查
-    check_system_resources
-    
-    # 进程检查
-    check_processes
-    
-    # 日志错误检查
-    check_logs_for_errors
-    
-    # 磁盘空间检查
-    if ! check_disk_space; then
-        ((issues++))
-    fi
-    
-    # 网络连通性检查
-    check_network_connectivity
-    
-    # 总结
-    echo "=== 监控总结 ==="
-    if [ $issues -eq 0 ]; then
-        echo -e "${GREEN}✅ 系统运行正常，无发现问题${NC}"
+    # 服务状态
+    if check_service_status; then
+        log_success "服务状态: 运行中"
     else
-        echo -e "${RED}⚠️ 发现 $issues 个问题${NC}"
+        log_error "服务状态: 已停止"
+        return 1
+    fi
+    
+    # 端口检查
+    if check_port_listening; then
+        log_success "端口 5008: 正常监听"
+    else
+        log_warning "端口 5008: 未监听"
+    fi
+    
+    # HTTP检查
+    if check_http_health; then
+        log_success "HTTP健康检查: 通过"
+    else
+        log_warning "HTTP健康检查: 失败"
+    fi
+    
+    echo ""
+}
+
+# 完整监控检查
+full_check() {
+    echo "=== CryptoRate Pro 完整监控报告 ==="
+    echo "时间: $(timestamp)"
+    echo ""
+    
+    # 基础状态
+    status_check
+    
+    # 系统资源
+    echo "系统资源使用:"
+    get_system_resources
+    echo ""
+    
+    # 进程信息
+    echo "进程信息:"
+    get_process_info
+    echo ""
+    
+    # 日志大小
+    check_log_sizes
+    echo ""
+    
+    # 最近的错误日志
+    echo "最近的错误日志:"
+    if journalctl -u "$SERVICE_NAME" --since "1 hour ago" -p err -q --no-pager | head -5; then
+        echo "  无最近错误"
+    fi
+    echo ""
+    
+    echo "=== 监控报告结束 ==="
+}
+
+# 自动修复服务
+auto_fix() {
+    log_info "开始自动修复..."
+    
+    if check_service_status; then
+        log_info "服务正在运行，检查健康状态..."
         
-        # 如果是严重问题，尝试自动修复
-        if [ $issues -ge 2 ]; then
-            if auto_repair; then
-                send_alert_email "CryptoRate Pro - 自动修复成功" "系统检测到问题并已自动修复"
+        if ! check_http_health; then
+            log_warning "HTTP检查失败，重启服务..."
+            sudo systemctl restart "$SERVICE_NAME"
+            sleep 10
+            
+            if check_http_health; then
+                log_success "服务重启后恢复正常"
             else
-                send_alert_email "CryptoRate Pro - 系统告警" "系统检测到严重问题，自动修复失败，需要人工介入"
+                log_error "服务重启后仍然异常"
+                return 1
             fi
+        else
+            log_success "服务运行正常，无需修复"
+        fi
+    else
+        log_warning "服务已停止，尝试启动..."
+        sudo systemctl start "$SERVICE_NAME"
+        sleep 10
+        
+        if check_service_status && check_http_health; then
+            log_success "服务启动成功"
+        else
+            log_error "服务启动失败"
+            journalctl -u "$SERVICE_NAME" -n 10 --no-pager
+            return 1
         fi
     fi
-    
-    echo ""
 }
 
-# 简单状态检查
-simple_status() {
-    local all_ok=true
+# 显示实时日志
+show_logs() {
+    echo "=== 实时日志监控 (按 Ctrl+C 退出) ==="
+    journalctl -u "$SERVICE_NAME" -f
+}
+
+# 性能监控
+performance_monitor() {
+    echo "=== 性能监控 (每5秒更新，按 Ctrl+C 退出) ==="
     
-    if ! systemctl is-active --quiet "$SERVICE_NAME"; then
-        echo "❌ 服务未运行"
-        all_ok=false
-    fi
-    
-    if ! ss -tulpn | grep -q ":5008 "; then
-        echo "❌ 端口未监听"
-        all_ok=false
-    fi
-    
-    if ! curl -s --max-time 5 "$HEALTH_CHECK_URL" > /dev/null 2>&1; then
-        echo "❌ 健康检查失败"
-        all_ok=false
-    fi
-    
-    if $all_ok; then
-        echo "✅ 系统运行正常"
-        exit 0
-    else
-        exit 1
-    fi
+    while true; do
+        clear
+        echo "CryptoRate Pro 性能监控 - $(timestamp)"
+        echo "========================================"
+        
+        # 服务状态
+        if check_service_status; then
+            echo "服务状态: ✅ 运行中"
+        else
+            echo "服务状态: ❌ 已停止"
+        fi
+        
+        # HTTP状态
+        if check_http_health; then
+            echo "HTTP状态: ✅ 正常"
+        else
+            echo "HTTP状态: ❌ 异常"
+        fi
+        
+        echo ""
+        echo "系统资源:"
+        get_system_resources
+        echo ""
+        echo "进程信息:"
+        get_process_info
+        echo ""
+        echo "按 Ctrl+C 退出监控..."
+        
+        sleep 5
+    done
+}
+
+# 显示帮助信息
+show_help() {
+    echo "CryptoRate Pro 监控脚本"
+    echo ""
+    echo "用法: $0 [选项]"
+    echo ""
+    echo "选项:"
+    echo "  status      快速状态检查"
+    echo "  full        完整监控报告"
+    echo "  fix         自动修复服务"
+    echo "  logs        显示实时日志"
+    echo "  perf        性能监控"
+    echo "  help        显示此帮助信息"
+    echo ""
+    echo "示例:"
+    echo "  $0 status   # 快速检查服务状态"
+    echo "  $0 full     # 生成完整监控报告"
+    echo "  $0 fix      # 自动修复服务问题"
 }
 
 # 主函数
 main() {
-    # 确保日志目录存在
-    sudo mkdir -p "$(dirname "$LOG_FILE")"
-    sudo chown pi:pi "$(dirname "$LOG_FILE")"
-    
-    case "${1:-full}" in
-        "full")
-            full_monitor
-            ;;
+    case "${1:-status}" in
         "status")
-            simple_status
+            status_check
             ;;
-        "service")
-            check_service_status
+        "full")
+            full_check
             ;;
-        "health")
-            check_health
-            ;;
-        "resources")
-            check_system_resources
-            ;;
-        "processes")
-            check_processes
+        "fix")
+            auto_fix
             ;;
         "logs")
-            check_logs_for_errors
+            show_logs
             ;;
-        "repair")
-            auto_repair
+        "perf")
+            performance_monitor
+            ;;
+        "help"|"--help"|"-h")
+            show_help
             ;;
         *)
-            echo "用法: $0 {full|status|service|health|resources|processes|logs|repair}"
-            echo ""
-            echo "  full       - 完整监控检查（默认）"
-            echo "  status     - 简单状态检查"
-            echo "  service    - 检查服务状态"
-            echo "  health     - 健康检查"
-            echo "  resources  - 系统资源检查"
-            echo "  processes  - 进程检查"
-            echo "  logs       - 日志错误检查"
-            echo "  repair     - 尝试自动修复"
+            echo "未知选项: $1"
+            show_help
             exit 1
             ;;
     esac
