@@ -10,7 +10,7 @@ set -euo pipefail
 readonly PROJECT_NAME="CryptoRate Pro"
 readonly SERVICE_NAME="crypto-chart"
 readonly PROJECT_DIR="/home/pi/crypto-chart"
-readonly GIT_REPO="https://github.com/eizawa/crypto-chart.git"  # 替换为你的实际仓库地址
+readonly GIT_REPO="https://github.com/yunze7373/crypto-chart.git"  # 替换为你的实际仓库地址
 
 # 颜色输出
 RED='\033[0;31m'
