@@ -20,8 +20,8 @@ access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
 # 进程配置
 daemon = False
 pidfile = "/var/run/crypto-chart/gunicorn.pid"
-user = "pi"
-group = "pi"
+user = "han"
+group = "han"
 tmp_upload_dir = None
 
 # 安全配置

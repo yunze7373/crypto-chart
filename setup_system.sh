@@ -5,9 +5,9 @@
 
 set -euo pipefail
 
-readonly PROJECT_DIR="/home/pi/crypto-chart"
+readonly PROJECT_DIR="$HOME/crypto-chart"
 readonly LOG_DIR="/var/log/crypto-chart"
-readonly BACKUP_DIR="/home/pi/backup/crypto-chart"
+readonly BACKUP_DIR="$HOME/backup/crypto-chart"
 
 # 颜色定义
 RED='\033[0;31m'
@@ -38,14 +38,12 @@ create_directories() {
     
     # 日志目录
     sudo mkdir -p "$LOG_DIR"
-    sudo chown pi:pi "$LOG_DIR"
     
     # 备份目录
     mkdir -p "$BACKUP_DIR"
     
     # 运行时目录
     sudo mkdir -p /var/run/crypto-chart
-    sudo chown pi:pi /var/run/crypto-chart
     
     log_success "目录创建完成"
 }
@@ -77,7 +75,7 @@ $LOG_DIR/*.log {
     compress
     delaycompress
     notifempty
-    create 0644 pi pi
+    create 0644 han han
     postrotate
         sudo systemctl reload crypto-chart || true
     endscript
@@ -91,7 +89,7 @@ $LOG_DIR/gunicorn.*.log {
     compress
     delaycompress
     notifempty
-    create 0644 pi pi
+    create 0644 han han
     postrotate
         sudo systemctl restart crypto-chart
     endscript
@@ -148,10 +146,10 @@ setup_system_limits() {
     sudo tee -a /etc/security/limits.conf > /dev/null << EOF
 
 # CryptoRate Pro 资源限制
-pi soft nproc 4096
-pi hard nproc 8192
-pi soft nofile 65536
-pi hard nofile 65536
+han soft nproc 4096
+han hard nproc 8192
+han soft nofile 65536
+han hard nofile 65536
 EOF
     
     log_success "系统限制配置完成"
@@ -187,7 +185,7 @@ create_shortcuts() {
     sudo ln -sf "$PROJECT_DIR/monitor.sh" /usr/local/bin/crypto-monitor
     
     # 创建别名脚本
-    cat > /home/pi/.crypto_aliases << EOF
+    cat > /home/han/.crypto_aliases << EOF
 # CryptoRate Pro 快捷命令
 alias crypto-status='systemctl status crypto-chart'
 alias crypto-logs='journalctl -u crypto-chart -f'
@@ -201,8 +199,8 @@ alias crypto-restore='$PROJECT_DIR/update_crypto_chart.sh restore'
 EOF
     
     # 添加到 .bashrc（如果尚未添加）
-    if ! grep -q ".crypto_aliases" /home/pi/.bashrc; then
-        echo "source /home/pi/.crypto_aliases" >> /home/pi/.bashrc
+    if ! grep -q ".crypto_aliases" /home/han/.bashrc; then
+        echo "source /home/han/.crypto_aliases" >> /home/han/.bashrc
     fi
     
     log_success "快捷命令创建完成"

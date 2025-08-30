@@ -79,11 +79,11 @@ readonly REQUIRED_PACKAGES=(
 # 创建日志目录
 setup_logging() {
     sudo mkdir -p "$LOG_DIR"
-    sudo chown pi:pi "$LOG_DIR"
     
     # 设置日志文件
     readonly LOG_FILE="$LOG_DIR/update-$(date +%Y%m%d-%H%M%S).log"
-    touch "$LOG_FILE"
+    sudo touch "$LOG_FILE"
+    sudo chown $USER:$USER "$LOG_FILE"
 }
 
 # 日志函数
