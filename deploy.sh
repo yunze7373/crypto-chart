@@ -94,12 +94,20 @@ clone_project() {
         log_warning "项目目录已存在，创建备份..."
         mv "$target_dir" "${target_dir}.backup.$(date +%s)"
     fi
-    # 克隆代码
-    git clone "$GIT_REPO" "$target_dir" || {
-        log_error "无法克隆仓库，请检查网络连接和仓库地址"
-        log_info "如果是私有仓库，请先配置 SSH 密钥"
-        error_exit "代码克隆失败"
-    }
+    # 克隆代码（支持私有库环境变量）
+    if [[ -n "$GITHUB_USER" && -n "$GITHUB_TOKEN" ]]; then
+        log_info "检测到 GitHub 认证环境变量，使用 HTTPS 认证克隆私有仓库..."
+        git clone "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4- )" "$target_dir" || {
+            log_error "无法克隆私有仓库，请检查 GITHUB_USER/GITHUB_TOKEN 环境变量"
+            error_exit "代码克隆失败"
+        }
+    else
+        git clone "$GIT_REPO" "$target_dir" || {
+            log_error "无法克隆仓库，请检查网络连接和仓库地址"
+            log_info "如果是私有仓库，请先配置 SSH 密钥或环境变量"
+            error_exit "代码克隆失败"
+        }
+    fi
     cd "$target_dir"
     log_success "项目克隆完成"
 }

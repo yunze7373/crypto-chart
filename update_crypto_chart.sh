@@ -264,11 +264,16 @@ update_code() {
     # 检查是否为 git 仓库
     if [ ! -d ".git" ]; then
         log_warning "不是 Git 仓库，尝试克隆..."
-        cd /home/pi
+        cd ~
         if [ -d "$PROJECT_DIR" ]; then
             mv "$PROJECT_DIR" "${PROJECT_DIR}.backup.$(date +%s)"
         fi
-        git clone "$GIT_REPO" crypto-chart
+        if [[ -n "$GITHUB_USER" && -n "$GITHUB_TOKEN" ]]; then
+            log_info "检测到 GitHub 认证环境变量，使用 HTTPS 认证克隆私有仓库..."
+            git clone "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4-)" crypto-chart
+        else
+            git clone "$GIT_REPO" crypto-chart
+        fi
         cd "$PROJECT_DIR"
     fi
     
@@ -281,7 +286,11 @@ update_code() {
     
     # 获取最新代码
     log_info "拉取最新代码..."
-    git fetch origin "$GIT_BRANCH"
+    if [[ -n "$GITHUB_USER" && -n "$GITHUB_TOKEN" ]]; then
+        git fetch "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4-)" "$GIT_BRANCH"
+    else
+        git fetch origin "$GIT_BRANCH"
+    fi
     
     # 检查是否有更新
     local current_commit=$(git rev-parse HEAD)
