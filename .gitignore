@@ -1,0 +1,209 @@
+# CryptoRate Pro - Standard GitHub Ignore File
+# https://github.com/github/gitignore/blob/main/Python.gitignore (参考)
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.env/
+.venv/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# pyenv
+.python-version
+
+# mypy
+.mypy_cache/
+.dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Cython debug symbols
+cython_debug/
+
+# Django stuff:
+*.log
+local_settings.py
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.target/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath
+*.sage.py
+
+# Environments
+.env
+.env.*
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# dotenv
+.env.local
+.env.*.local
+
+# Sensitive files
+secrets.*
+*.pem
+*.key
+*.crt
+*.p12
+*.jks
+*.db
+*.sqlite3
+*.sqlite
+*.bak
+*.tmp
+*.swp
+*.swo
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+*.code-workspace
+
+# OS generated files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Test files
+/tests/
+/test_*.py
+*_test.py
+
+# Debug files
+*.log
+*.out
+*.err
+*.trace
+*.debug
+
+# Backup files
+*.bak
+*.old
+*.orig
+*.save
+
+# Node.js (if any frontend)
+node_modules/
+
+# Yarn
+.yarn/
+.yarnrc
+
+# npm
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Misc
+*.pid
+*.pid.*
+*.lock
+.lock/
+
+# Systemd
+*.service
+*.conf
+
+# Gunicorn
+*.pid
+*.log
+
+# Nginx
+*.log
+
+# Backup and temp
+backup/
+backup*/
+*.backup
+
+# Custom
+crypto-chart.log
+monitor.log
+cron-monitor.log
+network.log
+
+# End of file

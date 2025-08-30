@@ -1,0 +1,27 @@
+# CryptoRate Pro 定时任务配置
+# 将此文件内容添加到 crontab 中：sudo crontab -e
+
+# 每5分钟检查服务状态（简单检查）
+*/5 * * * * /home/pi/crypto-chart/monitor.sh status >/dev/null 2>&1
+
+# 每小时执行完整监控检查
+0 * * * * /home/pi/crypto-chart/monitor.sh full >> /var/log/crypto-chart/cron-monitor.log 2>&1
+
+# 每天凌晨2点清理7天前的日志
+0 2 * * * find /var/log/crypto-chart/ -name "*.log" -mtime +7 -delete
+
+# 每周日凌晨3点重启服务（可选，用于清理内存）
+# 0 3 * * 0 /usr/bin/systemctl restart crypto-chart
+
+# 每天凌晨4点创建备份（可选）
+# 0 4 * * * /home/pi/crypto-chart/update_crypto_chart.sh backup >/dev/null 2>&1
+
+# 每月1号清理30天前的备份文件
+0 0 1 * * find /home/pi/backup/crypto-chart/ -type f -mtime +30 -delete
+
+# 系统资源监控告警（每10分钟检查一次）
+# 当磁盘使用率超过90%或内存使用率超过90%时发送告警
+*/10 * * * * df /home/pi | awk 'NR==2 {if($5+0 > 90) print "警告：磁盘使用率过高 "$5}' | while read line; do [ "$line" ] && echo "$line" | mail -s "磁盘告警" root; done
+
+# 检查网络连接状态（每15分钟一次）
+*/15 * * * * ping -c1 8.8.8.8 >/dev/null 2>&1 || echo "网络连接异常 $(date)" >> /var/log/crypto-chart/network.log

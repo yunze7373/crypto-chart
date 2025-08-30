@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CryptoRate Pro - 数字资产汇率监控平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .current-info {
+            background: #f8f9fa;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .info-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .info-card .value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .op-price { color: #e74c3c; }
+        .arb-price { color: #3498db; }
+        .ratio-value { color: #27ae60; }
+        
+        .currency-selector {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            border: 1px solid #dee2e6;
+        }
+        
+        .selector-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .selector-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .selector-group select {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+            min-width: 180px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .currency-input-container {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .currency-input-container input {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+            color: #495057;
+            min-width: 180px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .currency-input-container input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .currency-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #dee2e6;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .currency-option {
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f8f9fa;
+            color: #495057;
+        }
+        
+        .currency-option:hover {
+            background: #f8f9fa;
+        }
+        
+        .currency-option.highlighted {
+            background: #667eea;
+            color: white;
+        }
+        
+        .currency-option.highlighted .currency-symbol {
+            color: white;
+        }
+        
+        .currency-option.highlighted .currency-name {
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .currency-symbol {
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .currency-name {
+            font-size: 12px;
+            color: #6c757d;
+            margin-left: 8px;
+        }
+        
+        .selector-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .reverse-btn {
+            font-size: 14px;
+            font-weight: bold;
+            color: #667eea;
+            background: white;
+            padding: 8px;
+            border-radius: 50%;
+            border: 2px solid #667eea;
+            margin: 0 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .reverse-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: rotate(180deg);
+        }
+        
+        .apply-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .apply-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+        
+        .chart-container {
+            padding: 30px 30px 120px 30px; /* 增加底部边距为120px，确保滑轴不被遮盖 */
+        }
+        
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .timespan-selector {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+        
+        .timespan-btn {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            text-transform: uppercase;
+        }
+        
+        .timespan-btn:hover {
+            background: #e9ecef;
+            border-color: #adb5bd;
+        }
+        
+        .timespan-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: #667eea;
+            color: white;
+        }
+        
+        .refresh-controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .time-range-slider {
+            width: 100%;
+            margin: 5px 0 0 0;
+            padding: 0;
+            background: transparent;
+            border: none;
+            box-sizing: border-box;
+            /* 计算图表绘图区域的边距，与Chart.js的布局对齐 */
+            padding-left: 65px;  /* 左侧Y轴标签的宽度 */
+            padding-right: 25px; /* 右侧留白 */
+        }
+        
+        .timeline-container {
+            position: relative;
+            height: 60px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            margin: 0;
+            overflow: hidden;
+        }
+        
+        .timeline-chart {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: rgba(102, 126, 234, 0.1);
+        }
+        
+        .timeline-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+        }
+        
+        .timeline-selection {
+            position: absolute;
+            top: 0;
+            height: 40px;
+            background: rgba(102, 126, 234, 0.2);
+            border-left: 2px solid #667eea;
+            border-right: 2px solid #667eea;
+            pointer-events: none;
+        }
+        
+        .timeline-handle {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 40px;
+            background: #667eea;
+            cursor: ew-resize;
+            z-index: 10;
+        }
+        
+        .timeline-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: -6px;
+            width: 14px;
+            height: 14px;
+            background: #667eea;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            transform: translateY(-50%);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s;
+        }
+        
+        .timeline-handle:hover::before {
+            background: #5a6fd8;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .timeline-handle.dragging::before {
+            background: #4f5bd5;
+            transform: translateY(-50%) scale(1.2);
+        }
+        
+        .timeline-labels {
+            position: absolute;
+            bottom: 3px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .timeline-info {
+            text-align: center;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+        
+        .mini-chart {
+            position: absolute;
+            top: 3px;
+            left: 5px;
+            right: 5px;
+            height: 37px;
+            background: transparent;
+        }
+        
+        .mini-chart svg {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .mini-chart-line {
+            fill: none;
+            stroke: #667eea;
+            stroke-width: 1.5;
+            opacity: 0.6;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: transform 0.2s;
+        }
+        
+        .refresh-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .refresh-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .last-update {
+            color: #666;
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #e74c3c;
+            background: #ffeaea;
+            margin: 20px;
+            border-radius: 10px;
+        }
+        
+        .fiat-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #dee2e6;
+            border-radius: 15px;
+            margin: 20px;
+            padding: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .fiat-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .fiat-header h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        .fiat-header p {
+            color: #6c757d;
+            margin: 0;
+        }
+        
+        .fiat-content {
+            display: grid;
+            gap: 25px;
+        }
+        
+        .fiat-rate-display {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .rate-info {
+            margin-bottom: 15px;
+        }
+        
+        .rate-label {
+            color: #6c757d;
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .rate-value {
+            font-size: 2.2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .rate-description {
+            color: #495057;
+            font-size: 1em;
+        }
+        
+        .fiat-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .feature-icon {
+            font-size: 1.2em;
+        }
+        
+        .feature-text {
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .fiat-suggestion {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .fiat-suggestion p {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+            font-weight: 600;
+        }
+        
+        .fiat-suggestion ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #1565c0;
+        }
+        
+        .fiat-suggestion li {
+            margin-bottom: 5px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                margin: 10px;
+            }
+            
+            .chart-container {
+                padding: 20px 20px 100px 20px; /* 移动端也增加底部边距 */
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+            
+            .timespan-selector {
+                justify-content: center;
+            }
+            
+            .refresh-controls {
+                justify-content: space-between;
+            }
+            
+            .timespan-btn {
+                font-size: 11px;
+                padding: 6px 12px;
+            }
+            
+            .time-range-slider {
+                margin: 3px 0 0 0;
+                padding-left: 45px;  /* 移动端调整左边距 */
+                padding-right: 15px; /* 移动端调整右边距 */
+            }
+            
+            .timeline-container {
+                height: 55px;
+            }
+            
+            .timeline-handle::before {
+                width: 16px;
+                height: 16px;
+                left: -8px;
+            }
+            
+            .timeline-info {
+                font-size: 10px;
+            }
+            
+            .timeline-labels {
+                font-size: 9px;
+            }
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>CryptoRate Pro</h1>
+            <p>专业的数字资产与法币汇率监控平台</p>
+        </div>
+        
+        <div class="current-info" id="currentInfo">
+            <div class="info-card">
+                <h3 id="baseCurrencyLabel">基础货币价格</h3>
+                <div class="value op-price" id="basePrice">加载中...</div>
+            </div>
+            <div class="info-card">
+                <h3 id="quoteCurrencyLabel">计价货币价格</h3>
+                <div class="value arb-price" id="quotePrice">加载中...</div>
+            </div>
+            <div class="info-card">
+                <h3 id="ratioLabel">兑换比例</h3>
+                <div class="value ratio-value" id="currentRatio">加载中...</div>
+            </div>
+            <div class="info-card">
+                <h3>更新时间</h3>
+                <div class="value" id="updateTime" style="font-size: 1em;">加载中...</div>
+            </div>
+        </div>
+        
+        <!-- 货币对选择器 -->
+        <div class="currency-selector">
+            <div class="selector-group">
+                <label>基础货币:</label>
+                <div class="currency-input-container">
+                    <input type="text" id="baseCurrency" placeholder="输入货币代码 (如: BTC)" autocomplete="off">
+                    <div class="currency-dropdown" id="baseDropdown"></div>
+                </div>
+            </div>
+            <button class="reverse-btn" onclick="reverseCurrencyPair()" title="点击交换货币对">⇄</button>
+            <div class="selector-group">
+                <label>计价货币:</label>
+                <div class="currency-input-container">
+                    <input type="text" id="quoteCurrency" placeholder="输入货币代码 (如: USDT)" autocomplete="off">
+                    <div class="currency-dropdown" id="quoteDropdown"></div>
+                </div>
+            </div>
+            <button class="apply-btn" onclick="updateCurrencyPair()">🔄 更新</button>
+        </div>
+        
+        <div class="chart-container">
+            <div class="controls">
+                <div class="timespan-selector">
+                    <button class="timespan-btn" data-timespan="1d">1D</button>
+                    <button class="timespan-btn" data-timespan="7d">7D</button>
+                    <button class="timespan-btn active" data-timespan="30d">1M</button>
+                    <button class="timespan-btn" data-timespan="90d">3M</button>
+                    <button class="timespan-btn" data-timespan="1y">1Y</button>
+                    <button class="timespan-btn" data-timespan="all">ALL</button>
+                </div>
+                <div class="refresh-controls">
+                    <button class="refresh-btn" id="refreshBtn" onclick="loadAllData()">
+                        🔄 刷新数据
+                    </button>
+                    <div class="last-update">
+                        最后更新: <span id="lastUpdate">从未</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="loadingDiv" class="loading">
+                📈 正在加载图表数据...
+            </div>
+            
+            <div id="errorDiv" class="error" style="display: none;">
+                ❌ 数据加载失败，请检查网络连接后重试
+            </div>
+            
+            <!-- 法币专用显示区域 -->
+            <div id="fiatInfoDiv" class="fiat-info" style="display: none;">
+                <div class="fiat-header">
+                    <h3>💰 法币汇率查询</h3>
+                    <p>实时汇率信息 - 历史图表功能即将推出</p>
+                </div>
+                
+                <div class="fiat-content">
+                    <div class="fiat-rate-display">
+                        <div class="rate-info">
+                            <div class="rate-label">当前汇率</div>
+                            <div class="rate-value" id="fiatRateValue">正在获取...</div>
+                        </div>
+                        <div class="rate-description">
+                            <span id="fiatRateDescription">1 基础货币 = X 计价货币</span>
+                        </div>
+                    </div>
+                    
+                    <div class="fiat-features">
+                        <div class="feature-item">
+                            <span class="feature-icon">📊</span>
+                            <span class="feature-text">实时汇率查询</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🔄</span>
+                            <span class="feature-text">自动刷新数据</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">🌍</span>
+                            <span class="feature-text">支持主流法币</span>
+                        </div>
+                        <div class="feature-item">
+                            <span class="feature-icon">📈</span>
+                            <span class="feature-text">历史图表即将推出</span>
+                        </div>
+                    </div>
+                    
+                    <div class="fiat-suggestion">
+                        <p><strong>💡 建议：</strong></p>
+                        <ul>
+                            <li>查看实时汇率变化</li>
+                            <li>切换到加密货币对查看历史图表</li>
+                            <li>使用刷新按钮获取最新汇率</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-wrapper">
+                <canvas id="ratioChart" style="display: none;"></canvas>
+                
+                <!-- 时间轴紧贴图表下方 -->
+                <div class="time-range-slider" id="timeRangeSlider">
+                    <div class="timeline-container" id="timelineContainer">
+                        <!-- 迷你图表背景 -->
+                        <div class="mini-chart" id="miniChart">
+                            <svg id="miniChartSvg">
+                                <path id="miniChartPath" class="mini-chart-line" d=""></path>
+                            </svg>
+                        </div>
+                        
+                        <!-- 覆盖层 -->
+                        <div class="timeline-overlay"></div>
+                        
+                        <!-- 选择区域 -->
+                        <div class="timeline-selection" id="timelineSelection"></div>
+                        
+                        <!-- 拖拽手柄 -->
+                        <div class="timeline-handle" id="leftHandle"></div>
+                        <div class="timeline-handle" id="rightHandle"></div>
+                        
+                        <!-- 时间标签 -->
+                        <div class="timeline-labels" id="timelineLabels">
+                            <span>开始</span>
+                            <span>结束</span>
+                        </div>
+                    </div>
+                    
+                    <div class="timeline-info" id="timelineInfo">
+                        拖拽选择时间范围查看详细数据
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 支持的加密货币和法币列表（更新到2025年）
+        const supportedCurrencies = [
+            // 主流法币
+            { symbol: 'USD', name: 'US Dollar', type: 'fiat' },
+            { symbol: 'CNY', name: 'Chinese Yuan', type: 'fiat' },
+            { symbol: 'EUR', name: 'Euro', type: 'fiat' },
+            { symbol: 'JPY', name: 'Japanese Yen', type: 'fiat' },
+            { symbol: 'GBP', name: 'British Pound', type: 'fiat' },
+            { symbol: 'KRW', name: 'Korean Won', type: 'fiat' },
+            { symbol: 'CAD', name: 'Canadian Dollar', type: 'fiat' },
+            { symbol: 'AUD', name: 'Australian Dollar', type: 'fiat' },
+            { symbol: 'CHF', name: 'Swiss Franc', type: 'fiat' },
+            { symbol: 'HKD', name: 'Hong Kong Dollar', type: 'fiat' },
+            { symbol: 'SGD', name: 'Singapore Dollar', type: 'fiat' },
+            { symbol: 'INR', name: 'Indian Rupee', type: 'fiat' },
+            
+            // 主流稳定币
+            { symbol: 'USDT', name: 'Tether', type: 'crypto' },
+            { symbol: 'USDC', name: 'USD Coin', type: 'crypto' },
+            
+            // 主流加密货币
+            { symbol: 'BTC', name: 'Bitcoin', type: 'crypto' },
+            { symbol: 'ETH', name: 'Ethereum', type: 'crypto' },
+            { symbol: 'BNB', name: 'Binance Coin', type: 'crypto' },
+            { symbol: 'SOL', name: 'Solana', type: 'crypto' },
+            { symbol: 'ADA', name: 'Cardano', type: 'crypto' },
+            { symbol: 'AVAX', name: 'Avalanche', type: 'crypto' },
+            { symbol: 'DOT', name: 'Polkadot', type: 'crypto' },
+            { symbol: 'POL', name: 'Polygon', type: 'crypto' }, // 更新MATIC为POL
+            { symbol: 'LINK', name: 'Chainlink', type: 'crypto' },
+            { symbol: 'ATOM', name: 'Cosmos', type: 'crypto' },
+            { symbol: 'ICP', name: 'Internet Computer', type: 'crypto' },
+            { symbol: 'NEAR', name: 'Near Protocol', type: 'crypto' },
+            { symbol: 'APT', name: 'Aptos', type: 'crypto' },
+            { symbol: 'ARB', name: 'Arbitrum', type: 'crypto' },
+            { symbol: 'OP', name: 'Optimism', type: 'crypto' },
+            { symbol: 'SUI', name: 'Sui', type: 'crypto' },
+            { symbol: 'DOGE', name: 'Dogecoin', type: 'crypto' },
+            { symbol: 'SHIB', name: 'Shiba Inu', type: 'crypto' },
+            { symbol: 'LTC', name: 'Litecoin', type: 'crypto' },
+            { symbol: 'BCH', name: 'Bitcoin Cash', type: 'crypto' },
+            { symbol: 'XRP', name: 'Ripple', type: 'crypto' },
+            { symbol: 'TRX', name: 'Tron', type: 'crypto' },
+            { symbol: 'FTM', name: 'Fantom', type: 'crypto' },
+            { symbol: 'ALGO', name: 'Algorand', type: 'crypto' },
+            { symbol: 'VET', name: 'VeChain', type: 'crypto' },
+            { symbol: 'FIL', name: 'Filecoin', type: 'crypto' },
+            { symbol: 'MANA', name: 'Decentraland', type: 'crypto' },
+            { symbol: 'SAND', name: 'The Sandbox', type: 'crypto' }
+        ];
+
+        let myChart = null;
+        let currentTimespan = '30d';
+        let allChartData = null; // 存储完整的图表数据
+        let currentBaseCurrency = 'OP';
+        let currentQuoteCurrency = 'ARB';
+        let timeRangeSlider = {
+            isActive: false,
+            startPercent: 0,
+            endPercent: 100,
+            isDragging: false,
+            activeHandle: null
+        };
+        
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAllData();
+            
+            // 初始显示时间范围滑块（默认为30d）
+            const showSlider = ['30d', '90d', '1y', 'all'].includes(currentTimespan);
+            document.getElementById('timeRangeSlider').style.display = showSlider ? 'block' : 'none';
+            timeRangeSlider.isActive = showSlider;
+            
+            // 设置自动刷新（每5分钟）
+            setInterval(loadCurrentPrices, 5 * 60 * 1000);
+            
+            // 添加时间跨度选择器事件监听
+            document.querySelectorAll('.timespan-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    // 移除所有按钮的active类
+                    document.querySelectorAll('.timespan-btn').forEach(b => b.classList.remove('active'));
+                    // 为当前按钮添加active类
+                    this.classList.add('active');
+                    // 更新当前时间跨度
+                    currentTimespan = this.dataset.timespan;
+                    // 重新加载图表数据
+                    loadAllData();
+                    
+                    // 显示或隐藏时间范围滑块（只在较长时间跨度时显示）
+                    const showSlider = ['30d', '90d', '1y', 'all'].includes(currentTimespan);
+                    document.getElementById('timeRangeSlider').style.display = showSlider ? 'block' : 'none';
+                    timeRangeSlider.isActive = showSlider;
+                    
+                    if (showSlider) {
+                        resetTimeRangeSlider();
+                    }
+                });
+            });
+            
+            // 初始化时间范围滑块事件
+            initTimeRangeSlider();
+            
+            // 初始化滑块位置
+            resetTimeRangeSlider();
+            
+            // 初始化界面标签
+            updateInterfaceLabels();
+            
+            // 初始化货币输入框
+            initializeCurrencyInputs();
+            
+            // 初始加载数据
+            loadAllData();
+        });
+        
+        // 初始化货币输入框
+        function initializeCurrencyInputs() {
+            const baseInput = document.getElementById('baseCurrency');
+            const quoteInput = document.getElementById('quoteCurrency');
+            const baseDropdown = document.getElementById('baseDropdown');
+            const quoteDropdown = document.getElementById('quoteDropdown');
+            
+            // 设置初始值
+            baseInput.value = currentBaseCurrency;
+            quoteInput.value = currentQuoteCurrency;
+            
+            // 为基础货币输入框添加事件
+            setupCurrencyInput(baseInput, baseDropdown, 'base');
+            setupCurrencyInput(quoteInput, quoteDropdown, 'quote');
+        }
+        
+        // 设置货币输入框功能
+        function setupCurrencyInput(input, dropdown, type) {
+            input.addEventListener('input', function() {
+                const query = this.value.toUpperCase();
+                showCurrencyDropdown(dropdown, query, type);
+            });
+            
+            input.addEventListener('focus', function() {
+                const query = this.value.toUpperCase();
+                showCurrencyDropdown(dropdown, query, type);
+            });
+            
+            input.addEventListener('blur', function() {
+                // 延迟隐藏，让用户有时间点击选项
+                setTimeout(() => {
+                    dropdown.style.display = 'none';
+                }, 200);
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                const options = dropdown.querySelectorAll('.currency-option');
+                const highlighted = dropdown.querySelector('.currency-option.highlighted');
+                let newIndex = -1;
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (highlighted) {
+                        newIndex = Array.from(options).indexOf(highlighted) + 1;
+                    } else {
+                        newIndex = 0;
+                    }
+                    if (newIndex >= options.length) newIndex = 0;
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (highlighted) {
+                        newIndex = Array.from(options).indexOf(highlighted) - 1;
+                    } else {
+                        newIndex = options.length - 1;
+                    }
+                    if (newIndex < 0) newIndex = options.length - 1;
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (highlighted && highlighted.dataset.symbol) {
+                        selectCurrency(highlighted.dataset.symbol, type);
+                        dropdown.style.display = 'none';
+                    } else if (this.value.trim().length >= 2) {
+                        // 如果没有高亮选项但用户输入了至少2个字符，直接使用输入的值
+                        selectCurrency(this.value.trim().toUpperCase(), type);
+                        dropdown.style.display = 'none';
+                    }
+                    return;
+                } else if (e.key === 'Escape') {
+                    dropdown.style.display = 'none';
+                    return;
+                }
+                
+                // 更新高亮
+                options.forEach(opt => opt.classList.remove('highlighted'));
+                if (newIndex >= 0 && options[newIndex]) {
+                    options[newIndex].classList.add('highlighted');
+                }
+            });
+        }
+        
+        // 显示货币下拉选项
+        function showCurrencyDropdown(dropdown, query, type) {
+            const filtered = supportedCurrencies.filter(currency => 
+                currency.symbol.toLowerCase().includes(query.toLowerCase()) || 
+                currency.name.toLowerCase().includes(query.toLowerCase())
+            ).slice(0, 12); // 增加显示选项数量
+            
+            dropdown.innerHTML = '';
+            
+            if (filtered.length === 0 && query.length >= 2) {
+                // 如果没有找到匹配的货币但用户输入了至少2个字符，提供一个"直接使用"选项
+                const option = document.createElement('div');
+                option.className = 'currency-option highlighted';
+                option.dataset.symbol = query;
+                option.innerHTML = `
+                    <span class="currency-symbol">${query}</span>
+                    <span class="currency-name">直接使用此货币符号</span>
+                    <span class="currency-type" style="font-size: 10px; color: #888; margin-left: 5px;">🔍 尝试查询</span>
+                `;
+                
+                option.addEventListener('click', () => {
+                    selectCurrency(query, type);
+                    dropdown.style.display = 'none';
+                });
+                
+                dropdown.appendChild(option);
+            } else if (filtered.length === 0) {
+                dropdown.innerHTML = '<div class="currency-option">未找到匹配的货币，请输入更多字符</div>';
+            } else {
+                filtered.forEach((currency, index) => {
+                    const option = document.createElement('div');
+                    option.className = 'currency-option';
+                    option.dataset.symbol = currency.symbol;
+                    if (index === 0) option.classList.add('highlighted');
+                    
+                    const typeIndicator = currency.type === 'fiat' ? '💰' : '🪙';
+                    const typeText = currency.type === 'fiat' ? 'Fiat' : 'Crypto';
+                    
+                    option.innerHTML = `
+                        <span class="currency-symbol">${currency.symbol}</span>
+                        <span class="currency-name">${currency.name}</span>
+                        <span class="currency-type" style="font-size: 10px; color: #888; margin-left: 5px;">${typeIndicator} ${typeText}</span>
+                    `;
+                    
+                    option.addEventListener('click', () => {
+                        selectCurrency(currency.symbol, type);
+                        dropdown.style.display = 'none';
+                    });
+                    
+                    dropdown.appendChild(option);
+                });
+                
+                // 如果用户输入的内容不完全匹配任何货币，也提供"直接使用"选项
+                if (query.length >= 2 && !filtered.find(c => c.symbol.toLowerCase() === query.toLowerCase())) {
+                    const option = document.createElement('div');
+                    option.className = 'currency-option';
+                    option.dataset.symbol = query;
+                    option.innerHTML = `
+                        <span class="currency-symbol">${query}</span>
+                        <span class="currency-name">直接使用此货币符号</span>
+                        <span class="currency-type" style="font-size: 10px; color: #888; margin-left: 5px;">🔍 尝试查询</span>
+                    `;
+                    
+                    option.addEventListener('click', () => {
+                        selectCurrency(query, type);
+                        dropdown.style.display = 'none';
+                    });
+                    
+                    dropdown.appendChild(option);
+                }
+            }
+            
+            dropdown.style.display = 'block';
+        }
+        
+        // 选择货币
+        function selectCurrency(symbol, type) {
+            if (type === 'base') {
+                document.getElementById('baseCurrency').value = symbol;
+                currentBaseCurrency = symbol;
+            } else {
+                document.getElementById('quoteCurrency').value = symbol;
+                currentQuoteCurrency = symbol;
+            }
+            
+            // 检查是否有重复
+            if (currentBaseCurrency === currentQuoteCurrency) {
+                alert('基础货币和计价货币不能相同！');
+                return;
+            }
+            
+            // 更新界面标签
+            updateInterfaceLabels();
+            
+            // 自动加载数据
+            loadAllData();
+        }
+        
+        // 更新货币对
+        function updateCurrencyPair() {
+            const baseCurrency = document.getElementById('baseCurrency').value;
+            const quoteCurrency = document.getElementById('quoteCurrency').value;
+            
+            if (baseCurrency === quoteCurrency) {
+                alert('基础货币和计价货币不能相同！');
+                return;
+            }
+            
+            currentBaseCurrency = baseCurrency;
+            currentQuoteCurrency = quoteCurrency;
+            
+            // 更新界面标签
+            updateInterfaceLabels();
+            
+            // 重新加载数据
+            loadAllData();
+        }
+        
+        // 反向货币对
+        function reverseCurrencyPair() {
+            const baseInput = document.getElementById('baseCurrency');
+            const quoteInput = document.getElementById('quoteCurrency');
+            
+            // 交换值
+            const tempBase = baseInput.value;
+            baseInput.value = quoteInput.value;
+            quoteInput.value = tempBase;
+            
+            // 交换全局变量
+            const tempCurrency = currentBaseCurrency;
+            currentBaseCurrency = currentQuoteCurrency;
+            currentQuoteCurrency = tempCurrency;
+            
+            // 更新界面标签和数据
+            updateInterfaceLabels();
+            loadAllData();
+        }
+        
+        // 更新界面标签
+        function updateInterfaceLabels() {
+            document.getElementById('baseCurrencyLabel').textContent = `${currentBaseCurrency} 当前价格`;
+            document.getElementById('quoteCurrencyLabel').textContent = `${currentQuoteCurrency} 当前价格`;
+            document.getElementById('ratioLabel').textContent = `${currentBaseCurrency}/${currentQuoteCurrency} 比例`;
+        }
+        
+        // 加载所有数据
+        function loadAllData() {
+            loadCurrentPrices();
+            loadChartData();
+        }
+        
+        // 加载当前价格数据
+        async function loadCurrentPrices() {
+            try {
+                const response = await fetch(`/api/current_prices?base=${currentBaseCurrency}&quote=${currentQuoteCurrency}`);
+                if (!response.ok) throw new Error('网络响应错误');
+                
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    document.getElementById('basePrice').textContent = `$${data.base_price}`;
+                    document.getElementById('quotePrice').textContent = `$${data.quote_price}`;
+                    document.getElementById('currentRatio').textContent = data.ratio.toFixed(4);
+                    document.getElementById('updateTime').textContent = data.timestamp;
+                } else {
+                    throw new Error(data.message);
+                }
+                
+            } catch (error) {
+                console.error('获取当前价格失败:', error);
+                document.getElementById('basePrice').textContent = '获取失败';
+                document.getElementById('quotePrice').textContent = '获取失败';
+                document.getElementById('currentRatio').textContent = '获取失败';
+            }
+        }
+        
+        // 加载图表数据
+        async function loadChartData() {
+            const loadingDiv = document.getElementById('loadingDiv');
+            const errorDiv = document.getElementById('errorDiv');
+            const fiatInfoDiv = document.getElementById('fiatInfoDiv');
+            const chartCanvas = document.getElementById('ratioChart');
+            const refreshBtn = document.getElementById('refreshBtn');
+            
+            // 检查是否包含法币
+            const fiatCurrencies = ['USD', 'CNY', 'EUR', 'JPY', 'GBP', 'KRW', 'CAD', 'AUD', 'CHF', 'HKD', 'SGD', 'INR'];
+            const isBaseFiat = fiatCurrencies.includes(currentBaseCurrency);
+            const isQuoteFiat = fiatCurrencies.includes(currentQuoteCurrency);
+            
+            if (isBaseFiat || isQuoteFiat) {
+                // 显示法币专用界面
+                loadingDiv.style.display = 'none';
+                errorDiv.style.display = 'none';
+                fiatInfoDiv.style.display = 'block';
+                chartCanvas.style.display = 'none';
+                document.getElementById('timeRangeSlider').style.display = 'none';
+                
+                // 更新法币界面的内容
+                updateFiatInterface();
+                
+                // 恢复按钮状态
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 刷新数据';
+                return;
+            }
+            
+            try {
+                // 隐藏法币界面，显示加载状态
+                fiatInfoDiv.style.display = 'none';
+                loadingDiv.style.display = 'block';
+                errorDiv.style.display = 'none';
+                chartCanvas.style.display = 'none';
+                refreshBtn.disabled = true;
+                refreshBtn.textContent = '🔄 加载中...';
+                
+                // 获取数据，传递时间跨度参数和货币对参数
+                const response = await fetch(`/api/data?timespan=${currentTimespan}&base=${currentBaseCurrency}&quote=${currentQuoteCurrency}`);
+                
+                const chartData = await response.json();
+                
+                // 检查是否有错误信息
+                if (!response.ok || chartData.error) {
+                    throw new Error(chartData.error || chartData.message || '数据获取失败');
+                }
+                
+                // 存储完整数据用于时间范围滑块
+                allChartData = chartData;
+                
+                // 隐藏加载状态，显示图表
+                loadingDiv.style.display = 'none';
+                chartCanvas.style.display = 'block';
+                
+                // 如果时间范围滑块激活，显示它
+                if (timeRangeSlider.isActive) {
+                    document.getElementById('timeRangeSlider').style.display = 'block';
+                    updateTimelineLabels();
+                    createMiniChart();
+                    setTimeout(() => {
+                        updateTimelinePosition();
+                    }, 100);
+                }
+                
+                // 根据时间范围滑块过滤数据
+                const filteredData = filterDataByTimeRange(chartData);
+                
+                // 如果已存在图表实例，先销毁
+                if (myChart) {
+                    myChart.destroy();
+                }
+                
+                // 创建新图表
+                const ctx = chartCanvas.getContext('2d');
+                
+                // 根据时间跨度调整X轴标签显示
+                const getTimeLabelConfig = (timespan) => {
+                    switch(timespan) {
+                        case '1d': return { maxTicksLimit: 12, title: '时间 (小时)' };
+                        case '7d': return { maxTicksLimit: 14, title: '时间 (天)' };
+                        case '30d': return { maxTicksLimit: 15, title: '时间 (天)' };
+                        case '90d': return { maxTicksLimit: 12, title: '时间 (月)' };
+                        case '1y': return { maxTicksLimit: 12, title: '时间 (月)' };
+                        case 'all': return { maxTicksLimit: 10, title: '时间 (年)' };
+                        default: return { maxTicksLimit: 10, title: '时间' };
+                    }
+                };
+                
+                const timeLabelConfig = getTimeLabelConfig(currentTimespan);
+                
+                myChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: filteredData.labels,
+                        datasets: [{
+                            label: `${currentBaseCurrency}/${currentQuoteCurrency} 兑换比例`,
+                            data: filteredData.op_arb_data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 1,
+                            pointHoverRadius: 5,
+                            tension: 0.1,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: timeLabelConfig.title,
+                                    font: { size: 14 }
+                                },
+                                ticks: {
+                                    maxTicksLimit: timeLabelConfig.maxTicksLimit,
+                                    callback: function(value, index, values) {
+                                        const label = this.getLabelForValue(value);
+                                        // 根据时间跨度调整显示格式，包含年份
+                                        if (currentTimespan === '1d') {
+                                            // 1日图显示完整时间
+                                            if (label.includes(' ')) {
+                                                const [date, time] = label.split(' ');
+                                                const shortTime = time.substring(0, 5); // 只要时:分
+                                                return `${date} ${shortTime}`;
+                                            }
+                                        } else {
+                                            // 其他时间跨度显示年-月-日
+                                            if (label.includes(' ')) {
+                                                const [date, time] = label.split(' ');
+                                                return date; // 返回完整日期 YYYY-MM-DD
+                                            }
+                                        }
+                                        return label;
+                                    }
+                                }
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: `1 ${currentBaseCurrency} 可兑换的 ${currentQuoteCurrency} 数量`,
+                                    font: { size: 14 }
+                                },
+                                beginAtZero: false
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `比例: ${context.parsed.y.toFixed(4)}`;
+                                    }
+                                }
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                });
+                
+                // 更新最后更新时间
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleString('zh-CN');
+                
+            } catch (error) {
+                console.error('加载图表数据失败:', error);
+                loadingDiv.style.display = 'none';
+                fiatInfoDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                chartCanvas.style.display = 'none';
+                
+                // 更新错误消息
+                const errorMessage = errorDiv.querySelector('p');
+                if (error.message.includes('法币') || error.message.includes('Fiat')) {
+                    errorMessage.innerHTML = `
+                        ⚠️ ${error.message}<br>
+                        <small style="color: #888;">您仍可以查看当前价格信息</small>
+                    `;
+                } else {
+                    errorMessage.textContent = `❌ 数据加载失败：${error.message}`;
+                }
+            } finally {
+                // 恢复按钮状态
+                refreshBtn.disabled = false;
+                refreshBtn.textContent = '🔄 刷新数据';
+            }
+        }
+        
+        // 更新法币界面内容
+        async function updateFiatInterface() {
+            try {
+                // 获取当前价格数据
+                const response = await fetch(`/api/current_prices?base=${currentBaseCurrency}&quote=${currentQuoteCurrency}`);
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    // 更新汇率显示
+                    document.getElementById('fiatRateValue').textContent = data.ratio.toFixed(6);
+                    document.getElementById('fiatRateDescription').textContent = 
+                        `1 ${currentBaseCurrency} = ${data.ratio.toFixed(6)} ${currentQuoteCurrency}`;
+                } else {
+                    document.getElementById('fiatRateValue').textContent = '获取失败';
+                    document.getElementById('fiatRateDescription').textContent = '无法获取汇率信息';
+                }
+            } catch (error) {
+                console.error('获取法币汇率失败:', error);
+                document.getElementById('fiatRateValue').textContent = '获取失败';
+                document.getElementById('fiatRateDescription').textContent = '网络错误，请稍后重试';
+            }
+        }
+        
+        // 初始化时间范围滑块
+        function initTimeRangeSlider() {
+            const leftHandle = document.getElementById('leftHandle');
+            const rightHandle = document.getElementById('rightHandle');
+            const timelineContainer = document.getElementById('timelineContainer');
+            
+            let isDragging = false;
+            let activeHandle = null;
+            
+            // 鼠标按下事件
+            function handleMouseDown(e, handle) {
+                isDragging = true;
+                activeHandle = handle;
+                handle.classList.add('dragging');
+                e.preventDefault();
+                document.body.style.userSelect = 'none';
+            }
+            
+            // 鼠标移动事件
+            function handleMouseMove(e) {
+                if (!isDragging || !activeHandle) return;
+                
+                const rect = timelineContainer.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                
+                if (activeHandle.id === 'leftHandle') {
+                    timeRangeSlider.startPercent = Math.min(percent, timeRangeSlider.endPercent - 2);
+                } else {
+                    timeRangeSlider.endPercent = Math.max(percent, timeRangeSlider.startPercent + 2);
+                }
+                
+                updateTimelinePosition();
+                updateChartWithTimeRange();
+            }
+            
+            // 鼠标释放事件
+            function handleMouseUp() {
+                if (isDragging) {
+                    isDragging = false;
+                    if (activeHandle) {
+                        activeHandle.classList.remove('dragging');
+                        activeHandle = null;
+                    }
+                    document.body.style.userSelect = '';
+                }
+            }
+            
+            // 绑定事件
+            leftHandle.addEventListener('mousedown', (e) => handleMouseDown(e, leftHandle));
+            rightHandle.addEventListener('mousedown', (e) => handleMouseDown(e, rightHandle));
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            
+            // 触摸事件支持
+            leftHandle.addEventListener('touchstart', (e) => handleMouseDown(e.touches[0], leftHandle));
+            rightHandle.addEventListener('touchstart', (e) => handleMouseDown(e.touches[0], rightHandle));
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) handleMouseMove(e.touches[0]);
+            });
+            document.addEventListener('touchend', handleMouseUp);
+        }
+        
+        // 更新时间轴位置
+        function updateTimelinePosition() {
+            const leftHandle = document.getElementById('leftHandle');
+            const rightHandle = document.getElementById('rightHandle');
+            const timelineSelection = document.getElementById('timelineSelection');
+            
+            leftHandle.style.left = timeRangeSlider.startPercent + '%';
+            rightHandle.style.left = timeRangeSlider.endPercent + '%';
+            
+            timelineSelection.style.left = timeRangeSlider.startPercent + '%';
+            timelineSelection.style.width = (timeRangeSlider.endPercent - timeRangeSlider.startPercent) + '%';
+            
+            updateTimelineInfo();
+        }
+        
+        // 更新时间轴信息显示
+        function updateTimelineInfo() {
+            if (!allChartData) return;
+            
+            const totalLength = allChartData.labels.length;
+            const startIndex = Math.floor((timeRangeSlider.startPercent / 100) * totalLength);
+            const endIndex = Math.floor((timeRangeSlider.endPercent / 100) * totalLength);
+            
+            const startTime = allChartData.labels[startIndex] || allChartData.labels[0];
+            const endTime = allChartData.labels[endIndex - 1] || allChartData.labels[totalLength - 1];
+            
+            // 时间显示格式包含年份
+            const formatTime = (timeStr) => {
+                const date = new Date(timeStr);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                const hour = String(date.getHours()).padStart(2, '0');
+                const minute = String(date.getMinutes()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hour}:${minute}`;
+            };
+            
+            document.getElementById('timelineInfo').textContent = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+        }
+        
+        // 更新时间轴标签
+        function updateTimelineLabels() {
+            if (!allChartData) return;
+            
+            const labels = document.getElementById('timelineLabels');
+            const startTime = allChartData.labels[0];
+            const endTime = allChartData.labels[allChartData.labels.length - 1];
+            
+            // 格式化时间显示 - 包含年份
+            const formatTime = (timeStr) => {
+                const date = new Date(timeStr);
+                const year = date.getFullYear();
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const day = String(date.getDate()).padStart(2, '0');
+                return `${year}-${month}-${day}`;
+            };
+            
+            labels.innerHTML = `<span>${formatTime(startTime)}</span><span>${formatTime(endTime)}</span>`;
+        }
+        
+        // 创建迷你图表
+        function createMiniChart() {
+            if (!allChartData) return;
+            
+            const svg = document.getElementById('miniChartSvg');
+            const path = document.getElementById('miniChartPath');
+            
+            const data = allChartData.op_arb_data;
+            const width = svg.clientWidth || 400;
+            const height = svg.clientHeight || 50;
+            
+            // 计算数据范围
+            const minValue = Math.min(...data);
+            const maxValue = Math.max(...data);
+            const range = maxValue - minValue;
+            
+            // 生成路径
+            let pathData = '';
+            data.forEach((value, index) => {
+                const x = (index / (data.length - 1)) * width;
+                const y = height - ((value - minValue) / range) * height;
+                
+                if (index === 0) {
+                    pathData += `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            });
+            
+            path.setAttribute('d', pathData);
+        }
+        
+        // 重置时间范围滑块
+        function resetTimeRangeSlider() {
+            timeRangeSlider.startPercent = 0;
+            timeRangeSlider.endPercent = 100;
+            updateTimelinePosition();
+        }
+        
+        // 根据时间范围过滤数据
+        function filterDataByTimeRange(data) {
+            if (!timeRangeSlider.isActive) return data;
+            
+            const totalLength = data.labels.length;
+            const startIndex = Math.floor((timeRangeSlider.startPercent / 100) * totalLength);
+            const endIndex = Math.floor((timeRangeSlider.endPercent / 100) * totalLength);
+            
+            return {
+                labels: data.labels.slice(startIndex, endIndex),
+                op_arb_data: data.op_arb_data.slice(startIndex, endIndex),
+                op_prices: data.op_prices ? data.op_prices.slice(startIndex, endIndex) : [],
+                arb_prices: data.arb_prices ? data.arb_prices.slice(startIndex, endIndex) : []
+            };
+        }
+        
+        // 根据时间范围更新图表
+        function updateChartWithTimeRange() {
+            if (!myChart || !allChartData) return;
+            
+            const filteredData = filterDataByTimeRange(allChartData);
+            
+            myChart.data.labels = filteredData.labels;
+            myChart.data.datasets[0].data = filteredData.op_arb_data;
+            myChart.data.datasets[0].label = `${currentBaseCurrency}/${currentQuoteCurrency} 兑换比例`;
+            myChart.options.scales.y.title.text = `1 ${currentBaseCurrency} 可兑换的 ${currentQuoteCurrency} 数量`;
+            myChart.update('none'); // 无动画更新，提高性能
+        }
+    </script>
+</body>
+</html>
