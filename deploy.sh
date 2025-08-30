@@ -313,7 +313,7 @@ show_deployment_info() {
     echo ""
     echo "访问地址："
     echo "  - 应用直连: http://$(hostname -I | awk '{print $1}'):5008"
-    echo "  - Nginx代理: http://$(hostname -I | awk '{print $1})"
+    echo "  - Nginx代理: http://$(hostname -I | awk '{print $1}')"
     echo ""
     echo "服务管理命令："
     echo "  - 查看状态: systemctl status $SERVICE_NAME"
