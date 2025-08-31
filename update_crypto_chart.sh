@@ -18,7 +18,7 @@
 #  版本: 1.0 Enhanced for CryptoRate Pro
 #  更新日期: 2025-08-30
 #  适用环境: Raspberry Pi OS, Debian 11+, Ubuntu 20.04+
-#  服务路径: /home/pi/crypto-chart
+#  服务路径: $HOME/crypto-chart
 #  服务名称: crypto-chart
 #
 # ==============================================================================
@@ -32,21 +32,26 @@ set -euo pipefail
 # 基本配置
 readonly PROJECT_NAME="CryptoRate Pro"
 readonly SERVICE_NAME="crypto-chart"
-readonly PROJECT_DIR="$HOME/crypto-chart"
+readonly DEFAULT_PROJECT_DIR="$HOME/crypto-chart"
+readonly PROJECT_DIR="${1:-$DEFAULT_PROJECT_DIR}"
 readonly BACKUP_DIR="$HOME/backup/crypto-chart"
 readonly LOG_DIR="/var/log/crypto-chart"
-readonly PYTHON_BIN="/usr/bin/python3"
-readonly PIP_BIN="/usr/local/bin/pip3"
-readonly GUNICORN_BIN="/usr/local/bin/gunicorn"
 
 # Git 配置
-readonly GIT_REPO="https://github.com/yunze7373/crypto-chart.git"
-readonly GIT_BRANCH="main"
+readonly GIT_REPO="${CRYPTO_CHART_REPO:-https://github.com/yunze7373/crypto-chart.git}"
+readonly GIT_BRANCH="${CRYPTO_CHART_BRANCH:-main}"
+
+# 颜色输出
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
 
 # 健康检查配置
-readonly HEALTH_CHECK_URL="http://localhost:5008/api/current_prices?base=BTC&quote=USDT"
-readonly HEALTH_CHECK_TIMEOUT=30
-readonly HEALTH_CHECK_RETRIES=5
+readonly HEALTH_CHECK_URL="${CRYPTO_CHART_HEALTH_URL:-http://localhost:5008/api/current_prices?base=BTC&quote=USDT}"
+readonly HEALTH_CHECK_TIMEOUT="${CRYPTO_CHART_TIMEOUT:-30}"
+readonly HEALTH_CHECK_RETRIES="${CRYPTO_CHART_RETRIES:-5}"
 
 # 关键文件列表
 readonly CRITICAL_FILES=(
@@ -78,29 +83,45 @@ readonly REQUIRED_PACKAGES=(
 
 # 创建日志目录
 setup_logging() {
-    sudo mkdir -p "$LOG_DIR"
+    # 创建系统日志目录（如果不存在）
+    if [ ! -d "$LOG_DIR" ]; then
+        sudo mkdir -p "$LOG_DIR"
+        sudo chown $(whoami):$(whoami) "$LOG_DIR" 2>/dev/null || true
+        sudo chmod 755 "$LOG_DIR" 2>/dev/null || true
+    fi
+    
+    # 如果系统日志目录不可写，使用项目日志目录
+    local actual_log_dir="$LOG_DIR"
+    if [ ! -w "$LOG_DIR" ]; then
+        actual_log_dir="$PROJECT_DIR/logs"
+        mkdir -p "$actual_log_dir"
+    fi
     
     # 设置日志文件
-    readonly LOG_FILE="$LOG_DIR/update-$(date +%Y%m%d-%H%M%S).log"
-    sudo touch "$LOG_FILE"
-    sudo chown $USER:$USER "$LOG_FILE"
+    readonly LOG_FILE="$actual_log_dir/update-$(date +%Y%m%d-%H%M%S).log"
+    touch "$LOG_FILE" 2>/dev/null || {
+        # 如果无法创建日志文件，使用项目目录
+        readonly LOG_FILE="$PROJECT_DIR/logs/update-$(date +%Y%m%d-%H%M%S).log"
+        mkdir -p "$PROJECT_DIR/logs"
+        touch "$LOG_FILE"
+    }
 }
 
 # 日志函数
 log_info() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [INFO] $*" | tee -a "$LOG_FILE"
+    echo -e "${BLUE}[$(date '+%Y-%m-%d %H:%M:%S')] [INFO]${NC} $*" | tee -a "$LOG_FILE"
 }
 
 log_warning() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [WARN] $*" | tee -a "$LOG_FILE" >&2
+    echo -e "${YELLOW}[$(date '+%Y-%m-%d %H:%M:%S')] [WARN]${NC} $*" | tee -a "$LOG_FILE" >&2
 }
 
 log_error() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR] $*" | tee -a "$LOG_FILE" >&2
+    echo -e "${RED}[$(date '+%Y-%m-%d %H:%M:%S')] [ERROR]${NC} $*" | tee -a "$LOG_FILE" >&2
 }
 
 log_success() {
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS] $*" | tee -a "$LOG_FILE"
+    echo -e "${GREEN}[$(date '+%Y-%m-%d %H:%M:%S')] [SUCCESS]${NC} $*" | tee -a "$LOG_FILE"
 }
 
 # 错误处理
@@ -166,9 +187,13 @@ check_system_requirements() {
     fi
     
     # 检查磁盘空间
-    local available_space=$(df "$PROJECT_DIR" | awk 'NR==2 {print $4}')
-    if [ "$available_space" -lt 1048576 ]; then  # 1GB in KB
-        error_exit "磁盘空间不足，至少需要1GB可用空间"
+    if [ -d "$PROJECT_DIR" ]; then
+        local available_space=$(df "$PROJECT_DIR" | awk 'NR==2 {print $4}')
+        if [ -n "$available_space" ] && [ "$available_space" -lt 1048576 ]; then  # 1GB in KB
+            error_exit "磁盘空间不足，至少需要1GB可用空间"
+        fi
+    else
+        log_warning "项目目录不存在: $PROJECT_DIR"
     fi
     
     log_success "系统要求检查通过"
@@ -256,24 +281,55 @@ restore_backup() {
 # 代码更新函数
 # =============================================================================
 
+# 克隆项目（如果需要）
+clone_project_if_needed() {
+    log_info "克隆项目代码..."
+    
+    # 如果目录已存在，备份
+    if [ -d "$PROJECT_DIR" ]; then
+        log_warning "项目目录已存在，创建备份..."
+        mv "$PROJECT_DIR" "${PROJECT_DIR}.backup.$(date +%s)"
+    fi
+    
+    # 克隆代码（支持私有库环境变量）
+    if [[ -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+        log_info "检测到 GitHub 认证环境变量，使用 HTTPS 认证克隆私有仓库..."
+        git clone "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4- )" "$PROJECT_DIR" || {
+            log_error "无法克隆私有仓库，请检查 GITHUB_USER/GITHUB_TOKEN 环境变量"
+            error_exit "代码克隆失败"
+        }
+    else
+        git clone "$GIT_REPO" "$PROJECT_DIR" || {
+            log_error "无法克隆仓库，请检查网络连接和仓库地址"
+            log_info "如果是私有仓库，请先配置 SSH 密钥或环境变量"
+            error_exit "代码克隆失败"
+        }
+    fi
+    
+    log_success "项目克隆完成"
+}
+
 update_code() {
     log_info "更新代码..."
+    
+    # 检查项目目录是否存在
+    if [ ! -d "$PROJECT_DIR" ]; then
+        log_warning "项目目录不存在: $PROJECT_DIR"
+        log_info "尝试重新克隆项目..."
+        clone_project_if_needed
+        return 0
+    fi
     
     cd "$PROJECT_DIR" || error_exit "无法进入项目目录: $PROJECT_DIR"
     
     # 检查是否为 git 仓库
     if [ ! -d ".git" ]; then
         log_warning "不是 Git 仓库，尝试克隆..."
-        cd ~
+        cd "$HOME"
         if [ -d "$PROJECT_DIR" ]; then
             mv "$PROJECT_DIR" "${PROJECT_DIR}.backup.$(date +%s)"
         fi
-        if [[ -n "$GITHUB_USER" && -n "$GITHUB_TOKEN" ]]; then
-            log_info "检测到 GitHub 认证环境变量，使用 HTTPS 认证克隆私有仓库..."
-            git clone "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4-)" crypto-chart
-        else
-            git clone "$GIT_REPO" crypto-chart
-        fi
+        clone_project_if_needed
         cd "$PROJECT_DIR"
     fi
     
@@ -286,7 +342,7 @@ update_code() {
     
     # 获取最新代码
     log_info "拉取最新代码..."
-    if [[ -n "$GITHUB_USER" && -n "$GITHUB_TOKEN" ]]; then
+    if [[ -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
         git fetch "https://${GITHUB_USER}:${GITHUB_TOKEN}@github.com/$(echo "$GIT_REPO" | cut -d'/' -f4-)" "$GIT_BRANCH"
     else
         git fetch origin "$GIT_BRANCH"
@@ -328,10 +384,19 @@ check_python_dependencies() {
         return 1
     fi
     
+    # 检查虚拟环境
+    if [ ! -d "venv" ]; then
+        log_warning "虚拟环境不存在，需要重新创建"
+        return 1
+    fi
+    
+    # 激活虚拟环境
+    source venv/bin/activate
+    
     # 检查每个必需的包
     local missing_packages=()
     for package in "${REQUIRED_PACKAGES[@]}"; do
-        if ! $PYTHON_BIN -c "import ${package}" 2>/dev/null; then
+        if ! python -c "import ${package}" 2>/dev/null; then
             missing_packages+=("$package")
         fi
     done
@@ -348,23 +413,29 @@ check_python_dependencies() {
 install_python_dependencies() {
     log_info "安装/更新 Python 依赖..."
     
-    # 升级 pip
-    $PYTHON_BIN -m pip install --upgrade pip
+    cd "$PROJECT_DIR"
     
-    # 安装 gunicorn（如果未安装）
-    if ! command -v gunicorn &> /dev/null; then
-        log_info "安装 gunicorn..."
-        $PYTHON_BIN -m pip install gunicorn
+    # 检查并创建虚拟环境
+    if [ ! -d "venv" ]; then
+        log_info "创建虚拟环境..."
+        python3 -m venv venv
     fi
+    
+    # 激活虚拟环境
+    source venv/bin/activate
+    
+    # 升级 pip
+    python -m pip install --upgrade pip
     
     # 安装项目依赖
     if [ -f "requirements.txt" ]; then
         log_info "从 requirements.txt 安装依赖..."
-        $PYTHON_BIN -m pip install -r requirements.txt
+        # 强制重装以避免版本冲突
+        python -m pip install --force-reinstall --no-cache-dir -r requirements.txt
     else
         # 安装基本依赖
         log_info "安装基本依赖..."
-        $PYTHON_BIN -m pip install flask requests pandas
+        python -m pip install flask requests pandas gunicorn
     fi
     
     log_success "Python 依赖安装完成"
@@ -377,11 +448,54 @@ install_python_dependencies() {
 install_service() {
     log_info "安装 systemd 服务..."
     
-    # 检查服务文件是否存在
-    if [ ! -f "${SERVICE_NAME}.service" ]; then
-        log_error "服务文件不存在: ${SERVICE_NAME}.service"
-        return 1
-    fi
+    cd "$PROJECT_DIR"
+    local username=$(whoami)
+    
+    # 动态生成服务文件
+    cat > "${SERVICE_NAME}.service" << EOF
+[Unit]
+Description=CryptoRate Pro - 数字资产汇率监控平台
+Documentation=https://github.com/yunze7373/crypto-chart
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=${username}
+Group=${username}
+WorkingDirectory=${PROJECT_DIR}
+Environment=PATH=${PROJECT_DIR}/venv/bin:/usr/bin:/usr/local/bin
+Environment=PYTHONPATH=${PROJECT_DIR}
+Environment=PYTHONUNBUFFERED=1
+Environment=FLASK_ENV=production
+Environment=FLASK_DEBUG=0
+
+# 启动命令 - 使用虚拟环境中的 gunicorn
+ExecStart=${PROJECT_DIR}/venv/bin/gunicorn --bind 0.0.0.0:5008 --workers 2 --timeout 120 --worker-class sync app:app
+
+# 重启策略
+Restart=always
+RestartSec=10
+
+# 安全配置
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=${PROJECT_DIR} /var/log/crypto-chart
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crypto-chart
+
+[Install]
+WantedBy=multi-user.target
+EOF
     
     # 复制服务文件
     sudo cp "${SERVICE_NAME}.service" "/etc/systemd/system/"
@@ -454,9 +568,14 @@ health_check() {
 syntax_check() {
     log_info "执行语法检查..."
     
+    cd "$PROJECT_DIR"
+    
+    # 激活虚拟环境
+    source venv/bin/activate
+    
     # Python 语法检查
     if [ -f "app.py" ]; then
-        if ! $PYTHON_BIN -m py_compile app.py; then
+        if ! python -m py_compile app.py; then
             log_error "app.py 语法错误"
             return 1
         fi
@@ -465,7 +584,7 @@ syntax_check() {
     
     # 检查 requirements.txt 格式
     if [ -f "requirements.txt" ]; then
-        if ! $PYTHON_BIN -m pip install --dry-run -r requirements.txt > /dev/null 2>&1; then
+        if ! python -m pip install --dry-run -r requirements.txt > /dev/null 2>&1; then
             log_warning "requirements.txt 可能存在问题"
         else
             log_info "requirements.txt 格式检查通过"
@@ -514,7 +633,12 @@ main_update_process() {
     # 1. 系统检查
     check_system_requirements
     
-    # 2. 进入项目目录
+    # 2. 检查并进入项目目录
+    if [ ! -d "$PROJECT_DIR" ]; then
+        log_warning "项目目录不存在，尝试克隆项目..."
+        clone_project_if_needed
+    fi
+    
     cd "$PROJECT_DIR" || error_exit "无法进入项目目录"
     
     # 3. 创建备份
@@ -579,6 +703,65 @@ show_logs() {
     journalctl -u "$SERVICE_NAME" -n "$lines" --no-pager
 }
 
+# 显示环境变量信息
+show_environment_info() {
+    log_info "=== 环境变量配置 ==="
+    echo ""
+    echo "当前配置："
+    echo "  项目目录: $PROJECT_DIR"
+    echo "  备份目录: $BACKUP_DIR"
+    echo "  日志目录: $LOG_DIR"
+    echo "  Git 仓库: $GIT_REPO"
+    echo "  Git 分支: $GIT_BRANCH"
+    echo "  健康检查 URL: $HEALTH_CHECK_URL"
+    echo "  健康检查超时: $HEALTH_CHECK_TIMEOUT 秒"
+    echo "  健康检查重试: $HEALTH_CHECK_RETRIES 次"
+    echo ""
+    echo "支持的环境变量："
+    echo "  CRYPTO_CHART_REPO     - Git 仓库地址"
+    echo "  CRYPTO_CHART_BRANCH   - Git 分支名称"
+    echo "  CRYPTO_CHART_HEALTH_URL - 健康检查 URL"
+    echo "  CRYPTO_CHART_TIMEOUT  - 健康检查超时时间"
+    echo "  CRYPTO_CHART_RETRIES  - 健康检查重试次数"
+    echo "  GITHUB_USER           - GitHub 用户名（私有仓库）"
+    echo "  GITHUB_TOKEN          - GitHub 访问令牌（私有仓库）"
+    echo ""
+    echo "GitHub 认证状态："
+    if [[ -n "${GITHUB_USER:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
+        echo "  ✅ GitHub 认证已配置 (用户: ${GITHUB_USER})"
+    else
+        echo "  ❌ GitHub 认证未配置"
+        echo "     如果是私有仓库，请设置 GITHUB_USER 和 GITHUB_TOKEN"
+    fi
+}
+
+# 显示帮助信息
+show_help() {
+    echo "用法: $0 [项目目录] {update|status|logs|backup|restore|restart|stop|start|env|help}"
+    echo ""
+    echo "参数："
+    echo "  项目目录      - 可选，指定项目目录（默认: $DEFAULT_PROJECT_DIR）"
+    echo ""
+    echo "命令："
+    echo "  update       - 完整更新流程（默认）"
+    echo "  status       - 显示服务状态"
+    echo "  logs [行数]  - 显示服务日志（默认50行）"
+    echo "  backup       - 创建备份"
+    echo "  restore      - 恢复备份"
+    echo "  restart      - 重启服务"
+    echo "  stop         - 停止服务"
+    echo "  start        - 启动服务"
+    echo "  env          - 显示环境变量配置"
+    echo "  help         - 显示此帮助信息"
+    echo ""
+    echo "示例："
+    echo "  $0                           # 使用默认目录进行更新"
+    echo "  $0 /custom/path              # 指定项目目录进行更新"
+    echo "  $0 status                    # 查看服务状态"
+    echo "  $0 logs 100                  # 查看最近100行日志"
+    echo "  $0 env                       # 查看环境变量配置"
+}
+
 # =============================================================================
 # 主函数
 # =============================================================================
@@ -591,6 +774,7 @@ main() {
     log_info "脚本版本: 1.0 Enhanced"
     log_info "执行用户: $(whoami)"
     log_info "执行时间: $(date)"
+    log_info "项目目录: $PROJECT_DIR"
     
     # 解析参数
     case "${1:-update}" in
@@ -620,17 +804,14 @@ main() {
             sudo systemctl start "$SERVICE_NAME"
             health_check
             ;;
+        "env"|"environment")
+            show_environment_info
+            ;;
+        "help"|"--help"|"-h")
+            show_help
+            ;;
         *)
-            echo "用法: $0 {update|status|logs|backup|restore|restart|stop|start}"
-            echo ""
-            echo "  update   - 完整更新流程（默认）"
-            echo "  status   - 显示服务状态"
-            echo "  logs     - 显示服务日志"
-            echo "  backup   - 创建备份"
-            echo "  restore  - 恢复备份"
-            echo "  restart  - 重启服务"
-            echo "  stop     - 停止服务"
-            echo "  start    - 启动服务"
+            show_help
             exit 1
             ;;
     esac
@@ -648,6 +829,14 @@ trap 'error_exit "脚本被中断"' INT TERM
 # 检查是否以正确用户运行
 if [ "$EUID" -eq 0 ]; then
     error_exit "请不要以 root 用户运行此脚本"
+fi
+
+# 处理命令行参数
+if [ $# -gt 0 ] && [[ "$1" =~ ^/ ]] || [[ "$1" =~ ^\~ ]] || [[ "$1" =~ ^\$ ]]; then
+    # 第一个参数是路径
+    PROJECT_DIR="$1"
+    shift
+    readonly PROJECT_DIR
 fi
 
 # 执行主函数
