@@ -7,6 +7,12 @@
 ![Flask](https://img.shields.io/badge/Flask-2.3.3-red) 
 ![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-Ready-brightgreen)
 
+<!-- Project screenshot (shown on GitHub repo homepage) -->
+<p align="center">
+   <img src="docs/screenshots/home_1280x1300.png" alt="CryptoRate Pro Screenshot" />
+  
+</p>
+
 ## ✨ 功能特性
 
 ### 🌐 多货币支持
@@ -200,3 +206,4 @@ op-arb-chart/
 2. 确认币安API可正常访问
 3. 查看控制台错误信息
 4. 尝试刷新页面
+
