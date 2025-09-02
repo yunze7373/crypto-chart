@@ -11,7 +11,8 @@ readonly PROJECT_NAME="CryptoRate Pro"
 readonly SERVICE_NAME="crypto-chart"
 readonly DEFAULT_PROJECT_DIR="$HOME/crypto-chart"
 PROJECT_DIR="${1:-$DEFAULT_PROJECT_DIR}"
-readonly GIT_REPO="https://github.com/yunze7373/crypto-chart.git"  # 替换为你的实际仓库地址
+readonly GIT_REPO="${CRYPTO_CHART_REPO:-https://github.com/yunze7373/crypto-chart.git}"  # 可通过环境变量覆盖
+readonly GIT_BRANCH="${CRYPTO_CHART_BRANCH:-main}"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -272,11 +273,13 @@ create_systemd_service() {
     log_info "创建 systemd 服务..."
     
     USERNAME=$(whoami)
+    # 服务文档链接从仓库地址派生（去掉 .git）
+    DOC_URL=${GIT_REPO%.git}
     
     cat > "${PROJECT_DIR}/${SERVICE_NAME}.service" << EOF
 [Unit]
 Description=CryptoRate Pro - 数字资产汇率监控平台
-Documentation=https://github.com/yunze7373/crypto-chart
+Documentation=${DOC_URL}
 After=network.target network-online.target
 Wants=network-online.target
 

@@ -1,0 +1,40 @@
+[Unit]
+Description=CryptoRate Pro - 数字资产汇率监控平台
+Documentation=https://github.com/your-org-or-user/your-repo
+After=network.target network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+Group=YOUR_USERNAME
+WorkingDirectory=/home/YOUR_USERNAME/crypto-chart
+Environment=PATH=/home/YOUR_USERNAME/crypto-chart/venv/bin:/usr/bin:/usr/local/bin
+Environment=PYTHONPATH=/home/YOUR_USERNAME/crypto-chart
+Environment=PYTHONUNBUFFERED=1
+Environment=FLASK_ENV=production
+Environment=FLASK_DEBUG=0
+
+# 启动命令 - 使用 gunicorn 生产环境WSGI服务器
+ExecStart=/home/YOUR_USERNAME/crypto-chart/venv/bin/gunicorn --bind 0.0.0.0:5008 --workers 2 --timeout 120 --worker-class sync app:app
+
+# 重启策略
+Restart=always
+RestartSec=10
+StartLimitIntervalSec=0
+
+# 安全配置
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/home/YOUR_USERNAME/crypto-chart
+
+# 资源限制
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# 日志配置
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=crypto-chart

@@ -58,7 +58,6 @@ readonly CRITICAL_FILES=(
     "app.py"
     "requirements.txt"
     "templates/index.html"
-    "${SERVICE_NAME}.service"
 )
 
 # 可选配置文件
