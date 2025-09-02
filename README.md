@@ -57,6 +57,34 @@
 
 ## 🚀 快速开始
 
+### 本地快速运行（免部署）
+
+无需安装 Nginx 或 systemd，直接在本机运行：
+
+Windows（PowerShell）：
+```powershell
+py -3 -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python app.py
+# 访问（开发服务器默认端口）：http://127.0.0.1:5001
+```
+
+Linux / macOS：
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python app.py
+# 访问（开发服务器默认端口）：http://127.0.0.1:5001
+```
+
+可选（生产风格运行，使用 Gunicorn，端口 5008）：
+```bash
+gunicorn --bind 0.0.0.0:5008 app:app
+# 访问：http://127.0.0.1:5008
+```
+
 ### 一键部署（树莓派/Debian）
 
 ```bash
@@ -94,7 +122,8 @@ docker run -d -p 5008:5008 --name crypto-chart eizawa/crypto-chart:latest
    ```
 
 4. **访问应用**
-   打开浏览器访问 http://localhost:5008
+   - 如果运行的是 `python app.py`（开发服务器）：访问 http://127.0.0.1:5001
+   - 如果运行的是 `gunicorn --bind 0.0.0.0:5008 app:app`：访问 http://127.0.0.1:5008
 
 ## 📖 详细文档
 
