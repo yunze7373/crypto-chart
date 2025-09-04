@@ -97,18 +97,38 @@ update_code() {
     
     cd "$APP_DIR"
     
+    # 设置Git用户配置（如果未设置）
+    if ! git config user.email >/dev/null 2>&1; then
+        log "设置Git用户配置..."
+        git config user.email "crypto-chart@auto-update.local"
+        git config user.name "CryptoChart Auto Update"
+    fi
+    
     # 检查是否为Git仓库
     if [ -d ".git" ]; then
         log "从Git仓库更新..."
         
-        # 保存本地修改
-        git stash push -m "Auto-stash before update $(date)"
+        # 检查是否有本地修改
+        if ! git diff-index --quiet HEAD --; then
+            warning "检测到本地修改，创建临时提交..."
+            git add .
+            git commit -m "temp: 自动备份本地修改 $(date)" || true
+        fi
         
         # 拉取最新代码
+        log "拉取最新代码..."
         git fetch origin
-        git pull origin main
         
-        success "代码更新完成"
+        # 检查是否有更新
+        LOCAL=$(git rev-parse HEAD)
+        REMOTE=$(git rev-parse origin/main)
+        
+        if [ "$LOCAL" = "$REMOTE" ]; then
+            log "代码已是最新版本"
+        else
+            git pull origin main
+            success "代码更新完成"
+        fi
     else
         error "未检测到Git仓库，请手动更新代码或重新部署"
     fi
@@ -120,13 +140,42 @@ update_dependencies() {
     
     cd "$APP_DIR"
     
+    # 检测并激活虚拟环境
+    if [ -d "venv" ]; then
+        log "检测到虚拟环境，激活中..."
+        source venv/bin/activate
+        PIP_CMD="pip"
+        PYTHON_CMD="python"
+    elif [ -d ".venv" ]; then
+        log "检测到虚拟环境，激活中..."
+        source .venv/bin/activate
+        PIP_CMD="pip"
+        PYTHON_CMD="python"
+    else
+        warning "未检测到虚拟环境，使用系统Python..."
+        PIP_CMD="pip3"
+        PYTHON_CMD="python3"
+        
+        # 对于系统Python，检查是否需要--break-system-packages
+        if $PIP_CMD install --help | grep -q "break-system-packages"; then
+            PIP_ARGS="--break-system-packages"
+        else
+            PIP_ARGS=""
+        fi
+    fi
+    
     # 升级pip
-    pip3 install --upgrade pip
+    log "升级pip..."
+    $PIP_CMD install --upgrade pip $PIP_ARGS 2>/dev/null || true
     
     # 安装/更新依赖
-    pip3 install -r requirements.txt --upgrade
-    
-    success "依赖更新完成"
+    log "从 requirements.txt 安装依赖..."
+    if [ -f "requirements.txt" ]; then
+        $PIP_CMD install -r requirements.txt --upgrade $PIP_ARGS
+        success "Python 依赖安装完成"
+    else
+        warning "未找到 requirements.txt 文件"
+    fi
 }
 
 # 更新配置文件
