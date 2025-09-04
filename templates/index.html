@@ -633,6 +633,279 @@
                 font-size: 9px;
             }
         }
+        
+        /* =================== 价格提醒功能样式 =================== */
+        .alerts-section {
+            background: #f8f9fa;
+            margin: 20px 0;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .alerts-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .alerts-header h2 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+            font-weight: 300;
+        }
+        
+        .alerts-header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .alerts-content {
+            padding: 20px;
+        }
+        
+        .alert-form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px 15px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #28a745;
+            box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+        }
+        
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .alerts-list {
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .alerts-list-header {
+            background: #f8f9fa;
+            padding: 15px 20px;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .alerts-list-header h3 {
+            margin: 0;
+            color: #495057;
+            font-size: 1.1em;
+        }
+        
+        .alert-item {
+            padding: 20px;
+            border-bottom: 1px solid #f8f9fa;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .alert-item:last-child {
+            border-bottom: none;
+        }
+        
+        .alert-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .alert-detail {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .alert-detail-label {
+            font-size: 11px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+        
+        .alert-detail-value {
+            font-size: 14px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 12px;
+            border-radius: 6px;
+        }
+        
+        .alert-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-inactive {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .status-triggered {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #6c757d;
+        }
+        
+        .empty-state-icon {
+            font-size: 3em;
+            margin-bottom: 10px;
+            opacity: 0.5;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: all 0.3s;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .notification.success {
+            background: #28a745;
+        }
+        
+        .notification.error {
+            background: #dc3545;
+        }
+        
+        .notification.info {
+            background: #17a2b8;
+        }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -680,6 +953,67 @@
                 </div>
             </div>
             <button class="apply-btn" onclick="updateCurrencyPair()">🔄 更新</button>
+        </div>
+
+        <!-- 价格提醒功能区域 -->
+        <div class="alerts-section">
+            <div class="alerts-header">
+                <h2>🚨 价格提醒</h2>
+                <p>设置价格提醒，通过Discord接收实时通知</p>
+            </div>
+            <div class="alerts-content">
+                <!-- 创建提醒表单 -->
+                <div class="alert-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>基础货币</label>
+                            <input type="text" id="alertBaseCurrency" placeholder="如: BTC" style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label>计价货币</label>
+                            <input type="text" id="alertQuoteCurrency" placeholder="如: USDT" style="text-transform: uppercase;">
+                        </div>
+                        <div class="form-group">
+                            <label>提醒条件</label>
+                            <select id="alertCondition">
+                                <option value="above">价格高于</option>
+                                <option value="below">价格低于</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>目标价格</label>
+                            <input type="number" id="alertTargetPrice" placeholder="0.0000" step="any" min="0">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Discord Webhook URL</label>
+                            <input type="url" id="alertWebhookUrl" placeholder="https://discord.com/api/webhooks/...">
+                        </div>
+                        <div class="form-group">
+                            <label>备注 (可选)</label>
+                            <textarea id="alertNote" placeholder="为这个提醒添加备注..."></textarea>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="testWebhook()">测试 Webhook</button>
+                        <button type="button" class="btn btn-primary" onclick="createAlert()">创建提醒</button>
+                    </div>
+                </div>
+
+                <!-- 提醒列表 -->
+                <div class="alerts-list">
+                    <div class="alerts-list-header">
+                        <h3>📋 我的提醒列表</h3>
+                    </div>
+                    <div id="alertsList">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>暂无提醒，创建第一个价格提醒吧！</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="chart-container">
@@ -1580,6 +1914,251 @@
             myChart.options.scales.y.title.text = `1 ${currentBaseCurrency} 可兑换的 ${currentQuoteCurrency} 数量`;
             myChart.update('none'); // 无动画更新，提高性能
         }
+        
+        // =================== 价格提醒功能 ===================
+        
+        // 显示通知
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+        
+        // 测试Discord Webhook
+        async function testWebhook() {
+            const webhookUrl = document.getElementById('alertWebhookUrl').value.trim();
+            
+            if (!webhookUrl) {
+                showNotification('请输入Discord Webhook URL', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/alerts/test-webhook', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ webhook_url: webhookUrl })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification(result.message, 'success');
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('测试失败：' + error.message, 'error');
+            }
+        }
+        
+        // 创建价格提醒
+        async function createAlert() {
+            const baseCurrency = document.getElementById('alertBaseCurrency').value.trim().toUpperCase();
+            const quoteCurrency = document.getElementById('alertQuoteCurrency').value.trim().toUpperCase();
+            const conditionType = document.getElementById('alertCondition').value;
+            const targetPrice = parseFloat(document.getElementById('alertTargetPrice').value);
+            const webhookUrl = document.getElementById('alertWebhookUrl').value.trim();
+            const note = document.getElementById('alertNote').value.trim();
+            
+            // 验证输入
+            if (!baseCurrency || !quoteCurrency) {
+                showNotification('请输入基础货币和计价货币', 'error');
+                return;
+            }
+            
+            if (baseCurrency === quoteCurrency) {
+                showNotification('基础货币和计价货币不能相同', 'error');
+                return;
+            }
+            
+            if (isNaN(targetPrice) || targetPrice <= 0) {
+                showNotification('请输入有效的目标价格', 'error');
+                return;
+            }
+            
+            if (!webhookUrl) {
+                showNotification('请输入Discord Webhook URL', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/alerts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        base_currency: baseCurrency,
+                        quote_currency: quoteCurrency,
+                        condition_type: conditionType,
+                        target_price: targetPrice,
+                        discord_webhook_url: webhookUrl,
+                        note: note || null
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification('价格提醒创建成功！', 'success');
+                    // 清空表单
+                    document.getElementById('alertBaseCurrency').value = '';
+                    document.getElementById('alertQuoteCurrency').value = '';
+                    document.getElementById('alertTargetPrice').value = '';
+                    document.getElementById('alertWebhookUrl').value = '';
+                    document.getElementById('alertNote').value = '';
+                    // 刷新提醒列表
+                    loadAlerts();
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('创建失败：' + error.message, 'error');
+            }
+        }
+        
+        // 加载提醒列表
+        async function loadAlerts() {
+            try {
+                const response = await fetch('/api/alerts');
+                const result = await response.json();
+                
+                const alertsList = document.getElementById('alertsList');
+                
+                if (result.status === 'success' && result.data.length > 0) {
+                    alertsList.innerHTML = result.data.map(alert => `
+                        <div class="alert-item">
+                            <div class="alert-info">
+                                <div class="alert-detail">
+                                    <div class="alert-detail-label">货币对</div>
+                                    <div class="alert-detail-value">${alert.base_currency}/${alert.quote_currency}</div>
+                                </div>
+                                <div class="alert-detail">
+                                    <div class="alert-detail-label">条件</div>
+                                    <div class="alert-detail-value">${alert.condition_type === 'above' ? '高于' : '低于'} ${alert.target_price}</div>
+                                </div>
+                                <div class="alert-detail">
+                                    <div class="alert-detail-label">状态</div>
+                                    <div class="alert-detail-value">
+                                        <span class="alert-status ${
+                                            alert.is_triggered ? 'status-triggered' : 
+                                            alert.is_active ? 'status-active' : 'status-inactive'
+                                        }">
+                                            ${alert.is_triggered ? '已触发' : alert.is_active ? '活跃' : '已禁用'}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="alert-detail">
+                                    <div class="alert-detail-label">创建时间</div>
+                                    <div class="alert-detail-value">${new Date(alert.created_at).toLocaleString('zh-CN')}</div>
+                                </div>
+                                ${alert.note ? `
+                                <div class="alert-detail">
+                                    <div class="alert-detail-label">备注</div>
+                                    <div class="alert-detail-value">${alert.note}</div>
+                                </div>
+                                ` : ''}
+                            </div>
+                            <div class="alert-actions">
+                                ${!alert.is_triggered ? `
+                                <button class="btn btn-sm ${alert.is_active ? 'btn-secondary' : 'btn-success'}" 
+                                        onclick="toggleAlert(${alert.id})">
+                                    ${alert.is_active ? '禁用' : '启用'}
+                                </button>
+                                ` : ''}
+                                <button class="btn btn-sm btn-danger" onclick="deleteAlert(${alert.id})">删除</button>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    alertsList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📭</div>
+                            <p>暂无提醒，创建第一个价格提醒吧！</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('加载提醒列表失败:', error);
+                showNotification('加载提醒列表失败', 'error');
+            }
+        }
+        
+        // 切换提醒状态
+        async function toggleAlert(alertId) {
+            try {
+                const response = await fetch(`/api/alerts/${alertId}/toggle`, {
+                    method: 'PATCH'
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification(result.message, 'success');
+                    loadAlerts();
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('操作失败：' + error.message, 'error');
+            }
+        }
+        
+        // 删除提醒
+        async function deleteAlert(alertId) {
+            if (!confirm('确定要删除这个提醒吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/alerts/${alertId}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    showNotification('提醒已删除', 'success');
+                    loadAlerts();
+                } else {
+                    showNotification(result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('删除失败：' + error.message, 'error');
+            }
+        }
+        
+        // 从当前货币对填充提醒表单
+        function fillAlertFromCurrent() {
+            const baseCurrency = document.getElementById('baseCurrency').value.trim().toUpperCase();
+            const quoteCurrency = document.getElementById('quoteCurrency').value.trim().toUpperCase();
+            
+            if (baseCurrency) {
+                document.getElementById('alertBaseCurrency').value = baseCurrency;
+            }
+            if (quoteCurrency) {
+                document.getElementById('alertQuoteCurrency').value = quoteCurrency;
+            }
+        }
+        
+        // 页面加载完成后加载提醒列表
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAlerts();
+            
+            // 监听货币对输入变化，自动填充到提醒表单
+            document.getElementById('baseCurrency').addEventListener('change', fillAlertFromCurrent);
+            document.getElementById('quoteCurrency').addEventListener('change', fillAlertFromCurrent);
+        });
     </script>
 </body>
 </html>

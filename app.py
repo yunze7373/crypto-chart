@@ -4,8 +4,26 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 import time
+import os
+from models import db, Alert
+from discord_notifier import DiscordNotifier
+from alert_monitor import AlertMonitor
 
 app = Flask(__name__)
+
+# 数据库配置
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///crypto_alerts.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# 初始化数据库
+db.init_app(app)
+
+# 创建数据库表
+with app.app_context():
+    db.create_all()
+
+# 初始化价格监控器
+alert_monitor = AlertMonitor(app)
 
 # 支持的法币列表
 FIAT_CURRENCIES = {'USD', 'CNY', 'EUR', 'JPY', 'GBP', 'KRW', 'CAD', 'AUD', 'CHF', 'HKD', 'SGD', 'INR'}
@@ -438,8 +456,185 @@ def index():
     """渲染前端HTML页面"""
     return render_template('index.html')
 
+# =================== 价格提醒功能 API ===================
+
+@app.route('/api/alerts', methods=['GET'])
+def get_alerts():
+    """获取所有提醒列表"""
+    try:
+        alerts = Alert.query.order_by(Alert.created_at.desc()).all()
+        return jsonify({
+            "status": "success",
+            "data": [alert.to_dict() for alert in alerts]
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/alerts', methods=['POST'])
+def create_alert():
+    """创建新的价格提醒"""
+    try:
+        data = request.get_json()
+        
+        # 验证必需字段
+        required_fields = ['base_currency', 'quote_currency', 'condition_type', 'target_price', 'discord_webhook_url']
+        for field in required_fields:
+            if field not in data:
+                return jsonify({
+                    "status": "error",
+                    "message": f"缺少必需字段: {field}"
+                }), 400
+        
+        # 验证条件类型
+        if data['condition_type'] not in ['above', 'below']:
+            return jsonify({
+                "status": "error",
+                "message": "condition_type 必须是 'above' 或 'below'"
+            }), 400
+        
+        # 验证目标价格
+        try:
+            target_price = float(data['target_price'])
+            if target_price <= 0:
+                raise ValueError("价格必须大于0")
+        except (ValueError, TypeError):
+            return jsonify({
+                "status": "error",
+                "message": "target_price 必须是有效的正数"
+            }), 400
+        
+        # 测试Discord Webhook
+        if not DiscordNotifier.test_webhook(data['discord_webhook_url']):
+            return jsonify({
+                "status": "error",
+                "message": "Discord Webhook URL 无效或无法访问"
+            }), 400
+        
+        # 创建新提醒
+        alert = Alert(
+            base_currency=data['base_currency'].upper(),
+            quote_currency=data['quote_currency'].upper(),
+            condition_type=data['condition_type'],
+            target_price=target_price,
+            discord_webhook_url=data['discord_webhook_url'],
+            user_identifier=data.get('user_identifier'),
+            note=data.get('note')
+        )
+        
+        db.session.add(alert)
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": "价格提醒创建成功",
+            "data": alert.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/alerts/<int:alert_id>', methods=['DELETE'])
+def delete_alert(alert_id):
+    """删除指定的价格提醒"""
+    try:
+        alert = Alert.query.get(alert_id)
+        if not alert:
+            return jsonify({
+                "status": "error",
+                "message": "提醒不存在"
+            }), 404
+        
+        db.session.delete(alert)
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": "提醒已删除"
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/alerts/<int:alert_id>/toggle', methods=['PATCH'])
+def toggle_alert(alert_id):
+    """切换提醒的激活状态"""
+    try:
+        alert = Alert.query.get(alert_id)
+        if not alert:
+            return jsonify({
+                "status": "error",
+                "message": "提醒不存在"
+            }), 404
+        
+        alert.is_active = not alert.is_active
+        
+        # 如果重新激活，重置触发状态
+        if alert.is_active:
+            alert.is_triggered = False
+            alert.triggered_at = None
+        
+        db.session.commit()
+        
+        return jsonify({
+            "status": "success",
+            "message": f"提醒已{'激活' if alert.is_active else '禁用'}",
+            "data": alert.to_dict()
+        })
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+@app.route('/api/alerts/test-webhook', methods=['POST'])
+def test_webhook():
+    """测试Discord Webhook"""
+    try:
+        data = request.get_json()
+        webhook_url = data.get('webhook_url')
+        
+        if not webhook_url:
+            return jsonify({
+                "status": "error",
+                "message": "缺少 webhook_url 参数"
+            }), 400
+        
+        success = DiscordNotifier.test_webhook(webhook_url)
+        
+        return jsonify({
+            "status": "success" if success else "error",
+            "message": "Webhook 测试成功，请检查您的 Discord 频道" if success else "Webhook 测试失败，请检查URL是否正确"
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
 if __name__ == '__main__':
-    # 启动Web服务器
-    print("启动 CryptoRate Pro - 数字资产汇率监控平台...")
-    print("请在浏览器中访问: http://127.0.0.1:5008/")
-    app.run(debug=True, port=5008)
+    # 启动价格监控服务
+    alert_monitor.start()
+    
+    try:
+        # 启动Web服务器
+        print("启动 CryptoRate Pro - 数字资产汇率监控平台...")
+        print("价格提醒功能已启用")
+        print("请在浏览器中访问: http://127.0.0.1:5008/")
+        app.run(debug=True, port=5008)
+    finally:
+        # 停止监控服务
+        alert_monitor.stop()
